@@ -19,7 +19,7 @@ export interface TaskResult {
   readonly status: TaskStatus;
   readonly priority: Priority;
   readonly deadline: string | null;
-  readonly assigneeId?: string | null;
+  readonly assignee?: UserResult | null;
   readonly tags: string[];
 }
 

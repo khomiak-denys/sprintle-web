@@ -90,7 +90,7 @@ describe('WorkspacesComponent', () => {
       iat: Math.floor(Date.now() / 1000),
     });
     authServiceSpy.currentUserId.and.returnValue('usr-1');
-    authServiceSpy.isAdmin.and.returnValue(true);
+    authServiceSpy.isAdmin.and.returnValue(false);
     authServiceSpy.isManager.and.returnValue(true);
 
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
@@ -120,6 +120,12 @@ describe('WorkspacesComponent', () => {
       expect(state.userInitial).toBe('J');
     });
     expect(workspaceServiceSpy.loadWorkspaces).toHaveBeenCalled();
+  });
+
+  it('OnInit_Should_RedirectToAdmin_When_UserIsAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(true);
+    component.ngOnInit();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin']);
   });
 
   it('Render_Should_DisplayAllMemberWorkspaces', () => {
@@ -178,6 +184,15 @@ describe('WorkspacesComponent', () => {
     });
   });
 
+  it('FilterWorkspaces_Should_ShowEmptyState_When_NoMatchesFound', () => {
+    component['updateSearch']('NonExistentWorkspace');
+    fixture.detectChanges();
+
+    const emptyBox = fixture.nativeElement.querySelector('.no-workspaces-box');
+    expect(emptyBox).toBeTruthy();
+    expect(emptyBox.textContent).toContain('No matching workspaces found');
+  });
+
   it('CreateWorkspace_Should_CallApiAndReload_When_FormIsValid', () => {
     component['openCreateModal']();
     fixture.detectChanges();
@@ -195,6 +210,27 @@ describe('WorkspacesComponent', () => {
       description: 'Platform workspace for testing',
     });
     expect(notificationServiceSpy.success).toHaveBeenCalled();
+  });
+
+  it('CreateModal_Should_ShowContactAdminAndNoInputs_When_UserIsNotManagerOrAdmin', () => {
+    authServiceSpy.isManager.and.returnValue(false);
+    authServiceSpy.isAdmin.and.returnValue(false);
+
+    component['openCreateModal']();
+    fixture.detectChanges();
+
+    const modal = fixture.nativeElement.querySelector('.azure-modal');
+    expect(modal).toBeTruthy();
+
+    const nameInput = fixture.nativeElement.querySelector('#ws-name-input');
+    expect(nameInput).toBeNull();
+
+    const submitBtn = fixture.nativeElement.querySelector('#submit-create-workspace-btn');
+    expect(submitBtn).toBeNull();
+
+    const contactAdminBtn = fixture.nativeElement.querySelector('#btn-contact-admin');
+    expect(contactAdminBtn).toBeTruthy();
+    expect(contactAdminBtn.getAttribute('href')).toBe('mailto:admin@gmail.com');
   });
 
   it('OnSetDefault_Should_CallServiceSetDefaultWorkspaceAndNotify', () => {

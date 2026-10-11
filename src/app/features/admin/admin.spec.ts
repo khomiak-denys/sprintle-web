@@ -49,7 +49,12 @@ describe('AdminComponent', () => {
       status: 'InProgress',
       priority: 'High',
       deadline: '2026-10-15T00:00:00Z',
-      assigneeId: 'user-1',
+      assignee: {
+        id: 'user-1',
+        email: 'user1@example.com',
+        userName: 'user_1',
+        fullName: 'User One',
+      },
       tags: ['DevOps'],
     },
   ];
@@ -189,6 +194,7 @@ describe('AdminComponent', () => {
     workspaceServiceSpy = jasmine.createSpyObj(
       'WorkspaceService',
       [
+        'loadWorkspaces',
         'createWorkspace',
         'updateWorkspace',
         'deleteWorkspace',
@@ -201,6 +207,7 @@ describe('AdminComponent', () => {
         currentWorkspace: mockWorkspaces[0],
       },
     );
+    workspaceServiceSpy.loadWorkspaces.and.returnValue(of(mockWorkspaces));
     workspaceServiceSpy.createWorkspace.and.callFake((data) => ({
       ...data,
       id: 'ws-new-created',
@@ -370,6 +377,8 @@ describe('AdminComponent', () => {
 
     expect(taskServiceSpy.complete).toHaveBeenCalledWith('task-1');
     expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task marked as completed.');
+    expect(component.snapshot.isTaskBladeOpen).toBeFalse();
+    expect(component.snapshot.selectedTaskDetails).toBeNull();
   });
 
   it('onTaskCancel_Should_CallTaskServiceCancel_When_Invoked', () => {
@@ -378,6 +387,8 @@ describe('AdminComponent', () => {
 
     expect(taskServiceSpy.cancel).toHaveBeenCalledWith('task-1');
     expect(notificationServiceSpy.info).toHaveBeenCalledWith('Task cancelled.');
+    expect(component.snapshot.isTaskBladeOpen).toBeFalse();
+    expect(component.snapshot.selectedTaskDetails).toBeNull();
   });
 
   it('onEscape_Should_CloseModalsAndDrawers_When_Pressed', () => {
@@ -434,6 +445,21 @@ describe('AdminComponent', () => {
   it('setActiveTab_Should_SwitchToWorkspacesTab_When_Invoked', () => {
     component.setActiveTab('workspaces');
     expect(component.snapshot.activeTab).toBe('workspaces');
+    expect(workspaceServiceSpy.loadWorkspaces).toHaveBeenCalled();
+  });
+
+  it('loadWorkspaces_Should_FetchWorkspacesAndSetLoading_When_Invoked', () => {
+    component.loadWorkspaces();
+    expect(workspaceServiceSpy.loadWorkspaces).toHaveBeenCalled();
+    expect(component.snapshot.workspacesLoading).toBeFalse();
+    expect(component.snapshot.workspaces.length).toBe(mockWorkspaces.length);
+  });
+
+  it('loadWorkspaces_Should_HandleErrorAndNotify_When_ServiceFails', () => {
+    workspaceServiceSpy.loadWorkspaces.and.returnValue(throwError(() => new Error('API down')));
+    component.loadWorkspaces();
+    expect(component.snapshot.workspacesLoading).toBeFalse();
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Failed to load workspaces list.');
   });
 
   it('filteredWorkspaces$_Should_FilterBySearchQuery_When_QueryChanged', (done) => {
@@ -444,73 +470,6 @@ describe('AdminComponent', () => {
       expect(filtered[0].code).toBe('GW');
       done();
     });
-  });
-
-  it('openCreateWorkspaceModal_Should_ResetFormToCreateDefaults_When_Invoked', () => {
-    component.openCreateWorkspaceModal();
-
-    expect(component.snapshot.isWorkspaceModalOpen).toBeTrue();
-    expect(component.snapshot.workspaceModalMode).toBe('create');
-    expect(component.snapshot.workspaceFormName).toBe('');
-    expect(component.snapshot.workspaceFormCode).toBe('');
-    expect(component.snapshot.workspaceFormColor).toBe('#0078D4');
-  });
-
-  it('saveWorkspace_Should_CallCreateWorkspaceAndNotify_When_ModeIsCreate', () => {
-    component.openCreateWorkspaceModal();
-    component.onWorkspaceFormNameChange('Security Operations');
-    component.onWorkspaceFormCodeChange('SEC');
-    component.onWorkspaceFormDescriptionChange('Security controls');
-    component.onWorkspaceFormColorSelect('#5C2D91');
-    component.onWorkspaceFormRoleChange('Owner');
-    component.onWorkspaceFormIsDefaultChange(true);
-
-    component.saveWorkspace();
-
-    expect(workspaceServiceSpy.createWorkspace).toHaveBeenCalledWith(
-      jasmine.objectContaining({
-        name: 'Security Operations',
-        code: 'SEC',
-        description: 'Security controls',
-        color: '#5C2D91',
-        role: 'Owner',
-        isDefault: true,
-      }),
-    );
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
-      jasmine.stringMatching(/created successfully/),
-    );
-    expect(component.snapshot.isWorkspaceModalOpen).toBeFalse();
-  });
-
-  it('openEditWorkspaceModal_Should_PopulateFormWithExistingValues_When_Invoked', () => {
-    const ws = mockWorkspaces[0];
-    component.openEditWorkspaceModal(ws);
-
-    expect(component.snapshot.isWorkspaceModalOpen).toBeTrue();
-    expect(component.snapshot.workspaceModalMode).toBe('edit');
-    expect(component.snapshot.editingWorkspaceId).toBe(ws.id);
-    expect(component.snapshot.workspaceFormName).toBe(ws.name);
-    expect(component.snapshot.workspaceFormCode).toBe(ws.code);
-  });
-
-  it('saveWorkspace_Should_CallUpdateWorkspaceAndNotify_When_ModeIsEdit', () => {
-    const ws = mockWorkspaces[0];
-    component.openEditWorkspaceModal(ws);
-    component.onWorkspaceFormNameChange('Updated Core Lab');
-
-    component.saveWorkspace();
-
-    expect(workspaceServiceSpy.updateWorkspace).toHaveBeenCalledWith(
-      ws.id,
-      jasmine.objectContaining({
-        name: 'Updated Core Lab',
-      }),
-    );
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
-      jasmine.stringMatching(/updated successfully/),
-    );
-    expect(component.snapshot.isWorkspaceModalOpen).toBeFalse();
   });
 
   it('openDeleteWorkspaceModal_Should_OpenConfirmModal_When_MultipleWorkspacesExist', () => {
@@ -541,7 +500,7 @@ describe('AdminComponent', () => {
     );
   });
 
-  it('onSelectAndSwitchWorkspace_Should_CallServiceSelectWorkspace_When_Invoked', () => {
+  it('onSelectAndSwitchWorkspace_Should_CallServiceSelectWorkspaceAndNavigateToBoard_When_Invoked', () => {
     const ws = mockWorkspaces[2];
     component.onSelectAndSwitchWorkspace(ws);
 
@@ -549,20 +508,24 @@ describe('AdminComponent', () => {
     expect(notificationServiceSpy.success).toHaveBeenCalledWith(
       jasmine.stringMatching(/Switched active workspace/),
     );
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
   });
 
-  it('onEscape_Should_CloseWorkspaceModals_When_Open', () => {
-    // Workspace Create/Edit modal
-    component.openCreateWorkspaceModal();
-    expect(component.snapshot.isWorkspaceModalOpen).toBeTrue();
-    component.onEscape();
-    expect(component.snapshot.isWorkspaceModalOpen).toBeFalse();
-
+  it('onEscape_Should_CloseWorkspaceDeleteModal_When_Open', () => {
     // Workspace Delete modal
     component.openDeleteWorkspaceModal(mockWorkspaces[0]);
     expect(component.snapshot.isDeleteWorkspaceModalOpen).toBeTrue();
     component.onEscape();
     expect(component.snapshot.isDeleteWorkspaceModalOpen).toBeFalse();
+  });
+
+  it('getWorkspaceInitial_Should_ReturnFirstLetterCapitalized_When_NameProvided', () => {
+    expect(component.getWorkspaceInitial('3rd workspace')).toBe('3');
+    expect(component.getWorkspaceInitial('second workspace')).toBe('S');
+    expect(component.getWorkspaceInitial(' analytics ')).toBe('A');
+    expect(component.getWorkspaceInitial('')).toBe('W');
+    expect(component.getWorkspaceInitial(null)).toBe('W');
+    expect(component.getWorkspaceInitial(undefined)).toBe('W');
   });
 
   // User Dropdown Tests

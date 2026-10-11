@@ -3,35 +3,33 @@
   @if (!embedded) {
     <header class="profile-header">
       <div class="header-left">
-        <a routerLink="/" class="back-link" id="link-back-dashboard">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <a [routerLink]="backToDashboardRoute" class="back-link" id="link-back-dashboard">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          <span>Back to Dashboard</span>
+          <span>{{ authService.isAdmin() ? 'Back to Admin Dashboard' : 'Back to Dashboard' }}</span>
         </a>
         <span class="header-divider">/</span>
         <h1 class="header-title">Profile</h1>
       </div>
 
       <div class="header-right">
-        <button type="button" class="btn-signout" (click)="onLogout()" id="btn-profile-logout">Sign out</button>
+        <button type="button" class="btn-signout" (click)="onLogout()" id="btn-profile-logout">
+          Sign out
+        </button>
       </div>
-    </header>
-  } @else {
-    <header class="embedded-profile-header">
-      <div class="embedded-header-left">
-        <span class="embedded-tag">User Profile Details</span>
-      </div>
-      <button type="button" class="btn-close-embedded" (click)="closeRequested.emit()" title="Close details">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
     </header>
   }
-
 
   <main class="profile-main">
     @if (vm$ | async; as vm) {
@@ -43,7 +41,16 @@
       } @else if (vm.profileErrorMessage && !vm.profile) {
         <div class="error-state">
           <div class="error-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -51,7 +58,9 @@
           </div>
           <h2>Access Restricted</h2>
           <p>{{ vm.profileErrorMessage }}</p>
-          <a routerLink="/profile" class="btn-primary" id="btn-back-own-profile">Return to My Profile</a>
+          <a routerLink="/profile" class="btn-primary" id="btn-back-own-profile"
+            >Return to My Profile</a
+          >
         </div>
       } @else {
         <!-- Profile Hero Card -->
@@ -59,7 +68,9 @@
           <div class="hero-avatar">{{ vm.userInitial }}</div>
           <div class="hero-content">
             <div class="hero-identity">
-              <h2 class="hero-name">{{ vm.profile?.fullName || vm.profile?.userName || 'User' }}</h2>
+              <h2 class="hero-name">
+                {{ vm.profile?.fullName || vm.profile?.userName || 'User' }}
+              </h2>
               <span class="hero-username">&#64;{{ vm.profile?.userName }}</span>
               @if (!vm.isOwnProfile) {
                 <span class="admin-view-badge">Admin view</span>
@@ -67,8 +78,17 @@
             </div>
             <div class="hero-meta">
               <span class="meta-item">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  ></path>
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
                 <span>{{ vm.profile?.email }}</span>
@@ -103,7 +123,16 @@
             >
               <div class="item-header-left">
                 <div class="item-icon-wrapper user-icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
@@ -115,7 +144,19 @@
               </div>
 
               <div class="item-header-right">
-                <svg class="chevron-icon" [class.rotated]="isSectionExpanded('personal')" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg
+                  class="chevron-icon"
+                  [class.rotated]="isSectionExpanded('personal')"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
@@ -181,7 +222,9 @@
                           <span class="field-hint">Click to confirm your email (mock).</span>
                         </div>
                       } @else {
-                        <span class="field-hint">Email is managed by your account administrator.</span>
+                        <span class="field-hint"
+                          >Email is managed by your account administrator.</span
+                        >
                       }
                     </div>
 
@@ -194,9 +237,15 @@
                         placeholder="Username"
                       />
                       <div class="field-error-slot" aria-live="polite">
-                        @if (profileForm.get('userName')?.hasError('required') && profileForm.get('userName')?.touched) {
+                        @if (
+                          profileForm.get('userName')?.hasError('required') &&
+                          profileForm.get('userName')?.touched
+                        ) {
                           <span class="field-error">Username is required</span>
-                        } @else if (profileForm.get('userName')?.hasError('minlength') && profileForm.get('userName')?.touched) {
+                        } @else if (
+                          profileForm.get('userName')?.hasError('minlength') &&
+                          profileForm.get('userName')?.touched
+                        ) {
                           <span class="field-error">Username must be at least 3 characters</span>
                         }
                       </div>
@@ -254,7 +303,16 @@
             >
               <div class="item-header-left">
                 <div class="item-icon-wrapper security-icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                   </svg>
@@ -266,7 +324,19 @@
               </div>
 
               <div class="item-header-right">
-                <svg class="chevron-icon" [class.rotated]="isSectionExpanded('security')" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg
+                  class="chevron-icon"
+                  [class.rotated]="isSectionExpanded('security')"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
@@ -286,16 +356,42 @@
                       <p>Password updates can only be executed by the account owner.</p>
                     </div>
                   } @else {
-                    <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()" class="form-schema">
+                    <form
+                      [formGroup]="passwordForm"
+                      (ngSubmit)="onChangePassword()"
+                      class="form-schema"
+                    >
                       <div class="field-group">
                         <label for="current-password">Current Password</label>
                         <div
                           class="input-wrapper"
-                          [class.error]="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched"
+                          [class.error]="
+                            passwordForm.get('currentPassword')?.invalid &&
+                            passwordForm.get('currentPassword')?.touched
+                          "
                         >
-                          <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                            <path d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                          <svg
+                            class="input-icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <rect
+                              x="3"
+                              y="7"
+                              width="10"
+                              height="7"
+                              rx="1.5"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                            />
+                            <path
+                              d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                              stroke-linecap="round"
+                            />
                           </svg>
                           <input
                             id="current-password"
@@ -313,20 +409,49 @@
                           >
                             @if (vm.showCurrentPassword) {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                <path d="M3 13L13 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <path
+                                  d="M3 13L13 3"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                  stroke-linecap="round"
+                                />
                               </svg>
                             } @else {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
                               </svg>
                             }
                           </button>
                         </div>
                         <div class="field-error-slot" aria-live="polite">
-                          @if (passwordForm.get('currentPassword')?.hasError('required') && passwordForm.get('currentPassword')?.touched && !passwordForm.get('currentPassword')?.hasError('serverError')) {
+                          @if (
+                            passwordForm.get('currentPassword')?.hasError('required') &&
+                            passwordForm.get('currentPassword')?.touched &&
+                            !passwordForm.get('currentPassword')?.hasError('serverError')
+                          ) {
                             <span class="field-error">Current password is required</span>
                           }
                         </div>
@@ -336,11 +461,33 @@
                         <label for="new-password">New Password</label>
                         <div
                           class="input-wrapper"
-                          [class.error]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched"
+                          [class.error]="
+                            passwordForm.get('newPassword')?.invalid &&
+                            passwordForm.get('newPassword')?.touched
+                          "
                         >
-                          <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                            <path d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                          <svg
+                            class="input-icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <rect
+                              x="3"
+                              y="7"
+                              width="10"
+                              height="7"
+                              rx="1.5"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                            />
+                            <path
+                              d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                              stroke-linecap="round"
+                            />
                           </svg>
                           <input
                             id="new-password"
@@ -358,23 +505,58 @@
                           >
                             @if (vm.showNewPassword) {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                <path d="M3 13L13 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <path
+                                  d="M3 13L13 3"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                  stroke-linecap="round"
+                                />
                               </svg>
                             } @else {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
                               </svg>
                             }
                           </button>
                         </div>
                         <div class="field-error-slot" aria-live="polite">
-                          @if (passwordForm.get('newPassword')?.hasError('required') && passwordForm.get('newPassword')?.touched && !passwordForm.get('newPassword')?.hasError('serverError')) {
+                          @if (
+                            passwordForm.get('newPassword')?.hasError('required') &&
+                            passwordForm.get('newPassword')?.touched &&
+                            !passwordForm.get('newPassword')?.hasError('serverError')
+                          ) {
                             <span class="field-error">New password is required</span>
-                          } @else if (passwordForm.get('newPassword')?.hasError('minlength') && passwordForm.get('newPassword')?.touched && !passwordForm.get('newPassword')?.hasError('serverError')) {
-                            <span class="field-error">New password must be at least 6 characters</span>
+                          } @else if (
+                            passwordForm.get('newPassword')?.hasError('minlength') &&
+                            passwordForm.get('newPassword')?.touched &&
+                            !passwordForm.get('newPassword')?.hasError('serverError')
+                          ) {
+                            <span class="field-error"
+                              >New password must be at least 6 characters</span
+                            >
                           }
                         </div>
                       </div>
@@ -384,13 +566,33 @@
                         <div
                           class="input-wrapper"
                           [class.error]="
-                            (passwordForm.get('confirmNewPassword')?.invalid || passwordForm.hasError('passwordMismatch')) &&
+                            (passwordForm.get('confirmNewPassword')?.invalid ||
+                              passwordForm.hasError('passwordMismatch')) &&
                             passwordForm.get('confirmNewPassword')?.touched
                           "
                         >
-                          <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-                            <path d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                          <svg
+                            class="input-icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <rect
+                              x="3"
+                              y="7"
+                              width="10"
+                              height="7"
+                              rx="1.5"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                            />
+                            <path
+                              d="M5 7V5C5 3.34 6.34 2 8 2C9.66 2 11 3.34 11 5V7"
+                              stroke="currentColor"
+                              stroke-width="1.2"
+                              stroke-linecap="round"
+                            />
                           </svg>
                           <input
                             id="confirm-new-password"
@@ -408,22 +610,54 @@
                           >
                             @if (vm.showConfirmNewPassword) {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
-                                <path d="M3 13L13 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <path
+                                  d="M3 13L13 3"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                  stroke-linecap="round"
+                                />
                               </svg>
                             } @else {
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                <path d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z" stroke="currentColor" stroke-width="1.2"/>
-                                <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+                                <path
+                                  d="M2 8C2 8 4.5 3 8 3C11.5 3 14 8 14 8C14 8 11.5 13 8 13C4.5 13 2 8 2 8Z"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
+                                <circle
+                                  cx="8"
+                                  cy="8"
+                                  r="2"
+                                  stroke="currentColor"
+                                  stroke-width="1.2"
+                                />
                               </svg>
                             }
                           </button>
                         </div>
                         <div class="field-error-slot" aria-live="polite">
-                          @if (passwordForm.get('confirmNewPassword')?.hasError('required') && passwordForm.get('confirmNewPassword')?.touched && !passwordForm.get('confirmNewPassword')?.hasError('serverError')) {
+                          @if (
+                            passwordForm.get('confirmNewPassword')?.hasError('required') &&
+                            passwordForm.get('confirmNewPassword')?.touched &&
+                            !passwordForm.get('confirmNewPassword')?.hasError('serverError')
+                          ) {
                             <span class="field-error">Please confirm your new password</span>
-                          } @else if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmNewPassword')?.touched) {
+                          } @else if (
+                            passwordForm.hasError('passwordMismatch') &&
+                            passwordForm.get('confirmNewPassword')?.touched
+                          ) {
                             <span class="field-error">Passwords do not match</span>
                           }
                         </div>
@@ -514,7 +748,16 @@
             >
               <div class="item-header-left">
                 <div class="item-icon-wrapper metadata-icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -522,12 +765,26 @@
                 </div>
                 <div class="item-header-text">
                   <h2 class="item-title">Account Metadata</h2>
-                  <p class="item-desc">Diagnostic and identity data associated with this account.</p>
+                  <p class="item-desc">
+                    Diagnostic and identity data associated with this account.
+                  </p>
                 </div>
               </div>
 
               <div class="item-header-right">
-                <svg class="chevron-icon" [class.rotated]="isSectionExpanded('metadata')" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg
+                  class="chevron-icon"
+                  [class.rotated]="isSectionExpanded('metadata')"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>

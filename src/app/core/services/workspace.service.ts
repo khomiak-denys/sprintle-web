@@ -122,8 +122,8 @@ export class WorkspaceService {
   /**
    * Fetches workspaces from API and updates local streams.
    */
-  loadWorkspaces(name?: string): Observable<Workspace[]> {
-    return this.getAll(name, 1, 10).pipe(
+  loadWorkspaces(name?: string, page: number = 1, pageSize: number = 10): Observable<Workspace[]> {
+    return this.getAll(name, page, pageSize).pipe(
       map((res) => {
         const currentUserId = this.authService.currentUserId();
         const isAdmin = this.authService.isAdmin();

@@ -34,6 +34,7 @@ import {
 import { Workspace } from '../../core/models/workspace.models';
 import { TaskDetailsComponent } from './task-details/task-details.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { TooltipComponent } from '../../shared/components/tooltip/tooltip.component';
 
 export type DashboardTab = 'board' | 'list' | 'statistics';
 
@@ -112,6 +113,7 @@ export interface KpiSummary {
     RouterLink,
     TaskDetailsComponent,
     SkeletonComponent,
+    TooltipComponent,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -124,7 +126,7 @@ export class DashboardComponent implements OnInit {
     dropdownOpen: false,
     userInitial: this.calculateUserInitial(),
     activeTab: 'board',
-    viewMode: 'my-tasks',
+    viewMode: 'all-tasks',
     layoutMode: 'board',
     myFilterType: 'all',
     statusFilter: 'ALL',
@@ -211,6 +213,14 @@ export class DashboardComponent implements OnInit {
     return this.stateSubject.value;
   }
 
+  /**
+   * Returns the destination route when clicking the workspace breadcrumb link.
+   * If the user is an admin, returns to the admin panel ('/admin'); otherwise to workspaces ('/workspaces').
+   */
+  get workspaceBreadcrumbRoute(): string {
+    return this.authService.isAdmin() ? '/admin' : '/workspaces';
+  }
+
   protected readonly createTaskForm: FormGroup;
   protected readonly logTimeForm: FormGroup;
 
@@ -256,7 +266,7 @@ export class DashboardComponent implements OnInit {
 
   protected onWorkspaces(): void {
     this.updateState({ dropdownOpen: false });
-    this.router.navigate(['/workspaces']);
+    this.router.navigate([this.authService.isAdmin() ? '/admin' : '/workspaces']);
   }
 
   protected loadTasks(): void {
@@ -310,14 +320,29 @@ export class DashboardComponent implements OnInit {
   }
 
   protected setLayoutMode(mode: 'board' | 'list'): void {
-    this.updateState({ layoutMode: mode, activeTab: mode });
+    const isEnteringBoard = mode === 'board';
+    const shouldReload = isEnteringBoard && this.snapshot.viewMode !== 'all-tasks';
+    this.updateState({
+      layoutMode: mode,
+      activeTab: mode,
+      ...(isEnteringBoard ? { viewMode: 'all-tasks' } : {}),
+    });
+    if (shouldReload) {
+      this.loadTasks();
+    }
   }
 
   protected setActiveTab(tab: DashboardTab): void {
+    const isEnteringBoard = tab === 'board';
+    const shouldReload = isEnteringBoard && this.snapshot.viewMode !== 'all-tasks';
     this.updateState({
       activeTab: tab,
       layoutMode: tab === 'list' ? 'list' : 'board',
+      ...(isEnteringBoard ? { viewMode: 'all-tasks' } : {}),
     });
+    if (shouldReload) {
+      this.loadTasks();
+    }
   }
 
   protected onWorkspaceChange(workspace: Workspace): void {
@@ -337,11 +362,14 @@ export class DashboardComponent implements OnInit {
       priorityFilter: 'ALL',
       searchQuery: '',
       myFilterType: 'all',
+      viewMode: 'all-tasks',
+      page: 1,
     });
+    this.loadTasks();
   }
 
   protected setMyFilterType(type: MyTasksFilterType): void {
-    this.updateState({ myFilterType: type, page: 1 });
+    this.updateState({ myFilterType: type, viewMode: 'my-tasks', page: 1 });
     this.loadTasks();
   }
 
@@ -409,34 +437,54 @@ export class DashboardComponent implements OnInit {
     inputEl.focus();
   }
 
-  protected onTagInput(value: string): void {
+  protected onTagInput(value: string, inputEl?: HTMLInputElement): void {
     if (value.includes(',')) {
       const parts = value.split(',');
       for (const part of parts) {
         this.addCreatedTag(part);
       }
       this.tagInputText = '';
+      if (inputEl) inputEl.value = '';
+    } else if (value.includes('  ')) {
+      const parts = value.split('  ');
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (parts[i].trim()) {
+          this.addCreatedTag(parts[i]);
+        }
+      }
+      this.tagInputText = parts[parts.length - 1].trimStart();
+      if (inputEl) inputEl.value = this.tagInputText;
     } else {
       this.tagInputText = value;
     }
   }
 
-  protected onTagKeyDown(event: KeyboardEvent): void {
+  protected onTagKeyDown(event: KeyboardEvent, inputEl?: HTMLInputElement): void {
+    const el = inputEl || (event.target as HTMLInputElement | null);
     if (event.key === 'Enter' || event.key === ',') {
       event.preventDefault();
       if (this.tagInputText.trim()) {
         this.addCreatedTag(this.tagInputText);
         this.tagInputText = '';
+        if (el) el.value = '';
+      }
+    } else if (event.key === ' ' || event.code === 'Space') {
+      if (this.tagInputText.endsWith(' ') && this.tagInputText.trim()) {
+        event.preventDefault();
+        this.addCreatedTag(this.tagInputText);
+        this.tagInputText = '';
+        if (el) el.value = '';
       }
     } else if (event.key === 'Backspace' && !this.tagInputText && this.createdTags.length > 0) {
       this.removeCreatedTag(this.createdTags[this.createdTags.length - 1]);
     }
   }
 
-  protected onTagBlur(): void {
+  protected onTagBlur(inputEl?: HTMLInputElement): void {
     if (this.tagInputText.trim()) {
       this.addCreatedTag(this.tagInputText);
       this.tagInputText = '';
+      if (inputEl) inputEl.value = '';
     }
   }
 
@@ -531,50 +579,60 @@ export class DashboardComponent implements OnInit {
   protected onChangeStatus(task: TaskResult, status: TaskStatus): void {
     this.taskService
       .changeStatus(task.id, { status })
-      .pipe(
-        catchError(() => of(void 0)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => {
-        const updated = this.snapshot.tasks.map((t) => (t.id === task.id ? { ...t, status } : t));
-        const updatedSelected =
-          this.snapshot.selectedTask?.id === task.id
-            ? { ...this.snapshot.selectedTask, status }
-            : this.snapshot.selectedTask;
-        this.updateState({ tasks: updated, selectedTask: updatedSelected });
-        this.notificationService.success(`Status changed to ${status}.`);
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const updated = this.snapshot.tasks.map((t) => (t.id === task.id ? { ...t, status } : t));
+          const updatedSelected =
+            this.snapshot.selectedTask?.id === task.id
+              ? { ...this.snapshot.selectedTask, status }
+              : this.snapshot.selectedTask;
+          this.updateState({ tasks: updated, selectedTask: updatedSelected });
+          this.notificationService.success(`Status changed to ${status}.`);
+        },
+        error: () => {},
       });
   }
 
   protected onCompleteTask(task: TaskResult): void {
     this.taskService
       .complete(task.id)
-      .pipe(
-        catchError(() => of(void 0)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => {
-        const updated = this.snapshot.tasks.map((t) =>
-          t.id === task.id ? { ...t, status: 'Done' as TaskStatus } : t,
-        );
-        this.updateState({ tasks: updated });
-        this.notificationService.success('Task completed successfully.');
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const updated = this.snapshot.tasks.map((t) =>
+            t.id === task.id ? { ...t, status: 'Done' as TaskStatus } : t,
+          );
+          const isSelected = this.snapshot.selectedTask?.id === task.id;
+          this.updateState({
+            tasks: updated,
+            selectedTask: isSelected ? null : this.snapshot.selectedTask,
+            isBladeOpen: isSelected ? false : this.snapshot.isBladeOpen,
+          });
+          this.notificationService.success('Task completed successfully.');
+        },
+        error: () => {},
       });
   }
 
   protected onCancelTask(task: TaskResult): void {
     this.taskService
       .cancel(task.id)
-      .pipe(
-        catchError(() => of(void 0)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => {
-        const updated = this.snapshot.tasks.map((t) =>
-          t.id === task.id ? { ...t, status: 'Cancelled' as TaskStatus } : t,
-        );
-        this.updateState({ tasks: updated });
-        this.notificationService.info('Task cancelled.');
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const updated = this.snapshot.tasks.map((t) =>
+            t.id === task.id ? { ...t, status: 'Cancelled' as TaskStatus } : t,
+          );
+          const isSelected = this.snapshot.selectedTask?.id === task.id;
+          this.updateState({
+            tasks: updated,
+            selectedTask: isSelected ? null : this.snapshot.selectedTask,
+            isBladeOpen: isSelected ? false : this.snapshot.isBladeOpen,
+          });
+          this.notificationService.info('Task cancelled.');
+        },
+        error: () => {},
       });
   }
 
@@ -620,13 +678,23 @@ export class DashboardComponent implements OnInit {
 
     this.taskService
       .logTime(taskId, req)
-      .pipe(
-        catchError(() => of(void 0)),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => {
-        this.notificationService.success(`Logged ${req.minutesSpent} minutes.`);
-        this.closeLogTimeModal();
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success(`Logged ${req.minutesSpent} minutes.`);
+          this.closeLogTimeModal();
+          if (this.snapshot.selectedTask?.id === taskId) {
+            this.taskService
+              .getById(taskId)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe((updatedTask) => {
+                if (updatedTask) {
+                  this.updateState({ selectedTask: updatedTask });
+                }
+              });
+          }
+        },
+        error: () => {},
       });
   }
 
@@ -695,6 +763,27 @@ export class DashboardComponent implements OnInit {
 
       return matchesQuery && matchesStatus && matchesPriority;
     });
+  }
+
+  isTaskAssigned(task: TaskResult): boolean {
+    return !!task.assignee;
+  }
+
+  getAssigneeUsername(task: TaskResult): string {
+    return task.assignee?.userName || task.assignee?.fullName || '';
+  }
+
+  getAssigneeTooltip(task: TaskResult): string {
+    if (!this.isTaskAssigned(task)) {
+      return 'Unassigned';
+    }
+    return this.getAssigneeUsername(task) || 'Unassigned';
+  }
+
+  getAssigneeInitial(task: TaskResult): string {
+    const username = this.getAssigneeUsername(task);
+    if (!username) return '?';
+    return username.trim().charAt(0).toUpperCase() || '?';
   }
 
   private calculateUserInitial(): string {

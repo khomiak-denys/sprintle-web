@@ -14,7 +14,6 @@ describe('TaskDetailsComponent', () => {
     status: 'InProgress',
     priority: 'Critical',
     deadline: '2026-10-15T00:00:00Z',
-    assigneeId: 'user-1',
     tags: ['DevOps', 'Frontend'],
     createdAt: '2026-10-01T10:00:00Z',
     updatedAt: null,
@@ -79,7 +78,8 @@ describe('TaskDetailsComponent', () => {
 
   it('StateDropdown_Should_TriggerStatusChange_When_SelectionChanges', () => {
     spyOn(component.statusChange, 'emit');
-    const selectEl: HTMLSelectElement = fixture.nativeElement.querySelector('#details-state-select');
+    const selectEl: HTMLSelectElement =
+      fixture.nativeElement.querySelector('#details-state-select');
     expect(selectEl).toBeTruthy();
     expect(selectEl.value).toBe('InProgress');
 
@@ -128,10 +128,8 @@ describe('TaskDetailsComponent', () => {
     expect(component['getTotalLoggedMinutes']()).toBe(0);
   });
 
-  it('Comments_Should_GenerateMockComments_When_TaskHasNoPredefinedComments', () => {
-    expect(component['comments'].length).toBeGreaterThanOrEqual(2);
-    expect(component['comments'][0].taskId).toBe('task-101');
-    expect(component['comments'][0].content).toContain('Created work item "Migrate to Azure DevOps Board"');
+  it('Comments_Should_DefaultToEmpty_When_TaskHasNoPredefinedComments', () => {
+    expect(component['comments'].length).toBe(0);
   });
 
   it('Comments_Should_UseProvidedComments_When_TaskHasComments', () => {

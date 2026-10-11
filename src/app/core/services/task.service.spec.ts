@@ -1,9 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TaskService } from './task.service';
 import {
   TaskResult,
@@ -29,7 +26,7 @@ describe('TaskService', () => {
     status: 'InProgress',
     priority: 'High',
     deadline: '2026-10-15T00:00:00Z',
-    assigneeId: 'user-1',
+    assignee: null,
     tags: ['Frontend', 'Azure', 'UI'],
   };
 
@@ -70,11 +67,7 @@ describe('TaskService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        TaskService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [TaskService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(TaskService);
@@ -245,7 +238,9 @@ describe('TaskService', () => {
       done();
     });
 
-    const req = httpTesting.expectOne(`${baseUrl}/my?page=1&pageSize=10&type=assigned&workspaceId=ws-arch-core`);
+    const req = httpTesting.expectOne(
+      `${baseUrl}/my?page=1&pageSize=10&type=assigned&workspaceId=ws-arch-core`,
+    );
     expect(req.request.method).toBe('GET');
     expect(req.request.withCredentials).toBeTrue();
     req.flush(mockPagedTasks);
