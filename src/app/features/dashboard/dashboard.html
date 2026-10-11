@@ -34,10 +34,10 @@
       <div class="header-breadcrumb">
         <span class="breadcrumb-separator">/</span>
         <a
-          routerLink="/workspaces"
+          [routerLink]="workspaceBreadcrumbRoute"
           class="breadcrumb-item breadcrumb-link"
           id="link-breadcrumb-workspaces"
-          title="View all workspaces"
+          [attr.title]="authService.isAdmin() ? 'Return to admin panel' : 'View all workspaces'"
         >
           {{ (state$ | async)?.selectedWorkspace?.name || 'Workspaces' }}
         </a>
@@ -329,23 +329,32 @@
                               }
                             </div>
                             <div class="card-footer-right">
-                              @if (task.assigneeId) {
-                                <span class="card-assignee-avatar" title="Assigned">
-                                  <svg
-                                    width="11"
-                                    height="11"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.5"
-                                  >
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                  </svg>
+                              <app-tooltip [text]="getAssigneeTooltip(task)">
+                                <span
+                                  class="card-assignee-avatar"
+                                  [class.unassigned]="!isTaskAssigned(task)"
+                                  [attr.aria-label]="getAssigneeTooltip(task)"
+                                >
+                                  @if (isTaskAssigned(task)) {
+                                    <span class="avatar-letter">{{
+                                      getAssigneeInitial(task)
+                                    }}</span>
+                                  } @else {
+                                    <svg
+                                      class="avatar-human-icon"
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="2"
+                                    >
+                                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                      <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                  }
                                 </span>
-                              } @else {
-                                <span class="unassigned-placeholder" title="Unassigned">-</span>
-                              }
+                              </app-tooltip>
                             </div>
                           </div>
                         </div>
@@ -964,9 +973,9 @@
               type="text"
               class="tag-inline-input"
               [value]="tagInputText"
-              (input)="onTagInput($any($event.target).value)"
-              (keydown)="onTagKeyDown($event)"
-              (blur)="onTagBlur()"
+              (input)="onTagInput($any($event.target).value, tagInputEl)"
+              (keydown)="onTagKeyDown($event, tagInputEl)"
+              (blur)="onTagBlur(tagInputEl)"
               [placeholder]="
                 createdTags.length === 0 ? 'e.g. Security, Auth, Gateway' : 'Add another tag...'
               "

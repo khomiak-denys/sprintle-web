@@ -39,7 +39,12 @@ describe('DashboardComponent', () => {
       status: 'InProgress',
       priority: 'High',
       deadline: '2026-10-10T00:00:00Z',
-      assigneeId: 'user-123',
+      assignee: {
+        id: 'user-123',
+        email: 'alex@example.com',
+        userName: 'alex_dev',
+        fullName: 'Alex Developer',
+      },
       tags: ['DevOps', 'Telemetry'],
     },
     {
@@ -50,7 +55,7 @@ describe('DashboardComponent', () => {
       status: 'Todo',
       priority: 'Low',
       deadline: null,
-      assigneeId: null,
+      assignee: null,
       tags: ['UI'],
     },
   ];
@@ -85,7 +90,8 @@ describe('DashboardComponent', () => {
 
   beforeEach(async () => {
     localStorage.clear();
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser', 'logout']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser', 'logout', 'isAdmin']);
+    authServiceSpy.isAdmin.and.returnValue(false);
     authServiceSpy.currentUser.and.returnValue({
       sub: 'user-123',
       email: 'test@example.com',
@@ -160,7 +166,8 @@ describe('DashboardComponent', () => {
   it('Init_Should_LoadTasksAndComputeUserInitial_When_Created', () => {
     expect(component).toBeTruthy();
     expect(component.snapshot.userInitial).toBe('T');
-    expect(taskServiceSpy.getMy).toHaveBeenCalledWith('all', 1, 10, 'ws-arch-core');
+    expect(taskServiceSpy.getAll).toHaveBeenCalledWith(1, 10, 'ws-arch-core');
+    expect(taskServiceSpy.getMy).not.toHaveBeenCalled();
     expect(component.snapshot.tasks.length).toBe(2);
   });
 
@@ -218,8 +225,19 @@ describe('DashboardComponent', () => {
   });
 
   it('switchViewMode_Should_UpdateModeAndReloadTasks_When_Called', () => {
-    component['switchViewMode']('all-tasks');
+    component['switchViewMode']('my-tasks');
 
+    expect(component.snapshot.viewMode).toBe('my-tasks');
+    expect(taskServiceSpy.getMy).toHaveBeenCalledWith('all', 1, 10, 'ws-arch-core');
+  });
+
+  it('setActiveTab_Should_EnsureAllTasksCalledWithWorkspaceId_When_EnteringBoard', () => {
+    component['switchViewMode']('my-tasks');
+    taskServiceSpy.getAll.calls.reset();
+
+    component['setActiveTab']('board');
+
+    expect(component.snapshot.activeTab).toBe('board');
     expect(component.snapshot.viewMode).toBe('all-tasks');
     expect(taskServiceSpy.getAll).toHaveBeenCalledWith(1, 10, 'ws-arch-core');
   });
@@ -325,6 +343,34 @@ describe('DashboardComponent', () => {
     expect(component['createTaskForm'].get('tags')?.value).toBe('Security');
   });
 
+  it('Tags_Should_AddChip_When_UserPressesSpaceTwice', () => {
+    component['openCreateModal']();
+    component['tagInputText'] = 'rabbitmq ';
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ' });
+    component['onTagKeyDown'](spaceEvent);
+
+    expect(component['createdTags']).toContain('rabbitmq');
+    expect(component['tagInputText']).toBe('');
+  });
+
+  it('Tags_Should_NotAddChip_When_UserPressesSingleSpace', () => {
+    component['openCreateModal']();
+    component['tagInputText'] = 'rabbitmq';
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ' });
+    component['onTagKeyDown'](spaceEvent);
+
+    expect(component['createdTags']).not.toContain('rabbitmq');
+    expect(component['tagInputText']).toBe('rabbitmq');
+  });
+
+  it('Tags_Should_AddChip_When_DoubleSpaceEnteredInInput', () => {
+    component['openCreateModal']();
+    component['onTagInput']('rabbitmq  ');
+
+    expect(component['createdTags']).toContain('rabbitmq');
+    expect(component['tagInputText']).toBe('');
+  });
+
   it('Tags_Should_AddChips_When_CommaSeparatedWordEntered', () => {
     component['openCreateModal']();
     component['onTagInput']('Auth, Gateway,');
@@ -382,24 +428,57 @@ describe('DashboardComponent', () => {
   });
 
   it('onCompleteTask_Should_CallTaskServiceComplete_When_Called', () => {
+    component['onSelectTask'](mockTasks[0]);
     component['onCompleteTask'](mockTasks[0]);
 
     expect(taskServiceSpy.complete).toHaveBeenCalledWith('task-1');
     expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task completed successfully.');
     const updated = component.snapshot.tasks.find((t) => t.id === 'task-1');
     expect(updated?.status).toBe('Done');
+    expect(component.snapshot.selectedTask).toBeNull();
+    expect(component.snapshot.isBladeOpen).toBeFalse();
+  });
+
+  it('onCompleteTask_Should_NotUpdateStatusOrNotifySuccess_When_ApiFails', () => {
+    taskServiceSpy.complete.and.returnValue(throwError(() => new Error('API failure')));
+    component['onSelectTask'](mockTasks[0]);
+    component['onCompleteTask'](mockTasks[0]);
+
+    expect(taskServiceSpy.complete).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).not.toHaveBeenCalled();
+    const updated = component.snapshot.tasks.find((t) => t.id === 'task-1');
+    expect(updated?.status).toBe('InProgress');
+    expect(component.snapshot.selectedTask?.status).toBe('InProgress');
+    expect(component.snapshot.isBladeOpen).toBeTrue();
   });
 
   it('onCancelTask_Should_CallTaskServiceCancel_When_Called', () => {
+    component['onSelectTask'](mockTasks[0]);
     component['onCancelTask'](mockTasks[0]);
 
     expect(taskServiceSpy.cancel).toHaveBeenCalledWith('task-1');
     expect(notificationServiceSpy.info).toHaveBeenCalledWith('Task cancelled.');
     const updated = component.snapshot.tasks.find((t) => t.id === 'task-1');
     expect(updated?.status).toBe('Cancelled');
+    expect(component.snapshot.selectedTask).toBeNull();
+    expect(component.snapshot.isBladeOpen).toBeFalse();
+  });
+
+  it('onCancelTask_Should_NotUpdateStatusOrNotifyInfo_When_ApiFails', () => {
+    taskServiceSpy.cancel.and.returnValue(throwError(() => new Error('API failure')));
+    component['onSelectTask'](mockTasks[0]);
+    component['onCancelTask'](mockTasks[0]);
+
+    expect(taskServiceSpy.cancel).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.info).not.toHaveBeenCalled();
+    const updated = component.snapshot.tasks.find((t) => t.id === 'task-1');
+    expect(updated?.status).toBe('InProgress');
+    expect(component.snapshot.selectedTask?.status).toBe('InProgress');
+    expect(component.snapshot.isBladeOpen).toBeTrue();
   });
 
   it('onLogTimeSubmit_Should_LogTimeAndCloseModal_When_Valid', () => {
+    component['onSelectTask'](mockTasks[0]);
     component['openLogTimeModal'](mockTasks[0]);
     expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
     expect(component.snapshot.taskForTimeLog?.id).toBe('task-1');
@@ -419,6 +498,29 @@ describe('DashboardComponent', () => {
     });
     expect(notificationServiceSpy.success).toHaveBeenCalledWith('Logged 90 minutes.');
     expect(component.snapshot.isLogTimeModalOpen).toBeFalse();
+    expect(taskServiceSpy.getById).toHaveBeenCalledWith('task-1');
+  });
+
+  it('onLogTimeSubmit_Should_NotCloseModalOrNotifySuccess_When_ApiFails', () => {
+    taskServiceSpy.logTime.and.returnValue(throwError(() => new Error('API failure')));
+    component['openLogTimeModal'](mockTasks[0]);
+    expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
+
+    component['logTimeForm'].setValue({
+      minutesSpent: 90,
+      description: 'Wrote unit tests',
+      loggedDate: '2026-10-01',
+    });
+
+    component['onLogTimeSubmit']();
+
+    expect(taskServiceSpy.logTime).toHaveBeenCalledWith('task-1', {
+      minutesSpent: 90,
+      description: 'Wrote unit tests',
+      loggedDate: '2026-10-01',
+    });
+    expect(notificationServiceSpy.success).not.toHaveBeenCalled();
+    expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
   });
 
   it('setTimePreset_Should_UpdateMinutesSpentInForm_When_Invoked', () => {
@@ -467,7 +569,7 @@ describe('DashboardComponent', () => {
   });
 
   it('loadTasks_Should_HandleError_When_TaskServiceFails', () => {
-    taskServiceSpy.getMy.and.returnValue(throwError(() => new Error('Service down')));
+    taskServiceSpy.getAll.and.returnValue(throwError(() => new Error('Service down')));
 
     component['loadTasks']();
 
@@ -530,6 +632,8 @@ describe('DashboardComponent', () => {
     component['onDetailsComplete']();
 
     expect(taskServiceSpy.complete).toHaveBeenCalledWith('task-1');
+    expect(component.snapshot.isBladeOpen).toBeFalse();
+    expect(component.snapshot.selectedTask).toBeNull();
   });
 
   it('onDetailsCancel_Should_CancelSelectedTask_When_Invoked', () => {
@@ -537,6 +641,8 @@ describe('DashboardComponent', () => {
     component['onDetailsCancel']();
 
     expect(taskServiceSpy.cancel).toHaveBeenCalledWith('task-1');
+    expect(component.snapshot.isBladeOpen).toBeFalse();
+    expect(component.snapshot.selectedTask).toBeNull();
   });
 
   it('setActiveTab_Should_UpdateActiveTabAndLayoutMode_When_Invoked', () => {
@@ -611,6 +717,24 @@ describe('DashboardComponent', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/workspaces']);
   });
 
+  it('onWorkspaces_Should_CloseDropdownAndNavigateToAdmin_When_UserIsAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(true);
+    component['onWorkspaces']();
+
+    expect(component.snapshot.dropdownOpen).toBeFalse();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin']);
+  });
+
+  it('workspaceBreadcrumbRoute_Should_ReturnAdmin_When_UserIsAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(true);
+    expect(component.workspaceBreadcrumbRoute).toBe('/admin');
+  });
+
+  it('workspaceBreadcrumbRoute_Should_ReturnWorkspaces_When_UserIsNotAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(false);
+    expect(component.workspaceBreadcrumbRoute).toBe('/workspaces');
+  });
+
   it('Loading_Should_DisplaySkeletonTaskCards_When_LoadingIsTrueAndBoardTabActive', () => {
     component['updateState']({ loading: true, activeTab: 'board' });
     fixture.detectChanges();
@@ -625,5 +749,65 @@ describe('DashboardComponent', () => {
 
     const skeletonRows = fixture.nativeElement.querySelectorAll('.skeleton-table-row');
     expect(skeletonRows.length).toBe(5);
+  });
+
+  describe('Assignee Avatar & Tooltip', () => {
+    it('isTaskAssigned_Should_ReturnTrue_When_TaskHasAssigneeOrAssigneeId', () => {
+      expect(component.isTaskAssigned(mockTasks[0])).toBeTrue();
+    });
+
+    it('isTaskAssigned_Should_ReturnFalse_When_TaskHasNoAssignee', () => {
+      expect(component.isTaskAssigned(mockTasks[1])).toBeFalse();
+    });
+
+    it('getAssigneeTooltip_Should_ReturnUsername_When_TaskIsAssigned', () => {
+      expect(component.getAssigneeTooltip(mockTasks[0])).toBe('alex_dev');
+    });
+
+    it('getAssigneeTooltip_Should_ReturnUnassigned_When_TaskIsNotAssigned', () => {
+      expect(component.getAssigneeTooltip(mockTasks[1])).toBe('Unassigned');
+    });
+
+    it('getAssigneeInitial_Should_ReturnFirstLetterUppercase_When_TaskIsAssigned', () => {
+      expect(component.getAssigneeInitial(mockTasks[0])).toBe('A');
+    });
+
+    it('getAssigneeInitial_Should_ReturnFallback_When_NoUsernameFound', () => {
+      const taskWithoutUser: TaskResult = {
+        ...mockTasks[1],
+        assignee: null,
+      };
+      expect(component.getAssigneeInitial(taskWithoutUser)).toBe('?');
+    });
+
+    it('DOM_Should_RenderAssigneeAvatarWithInitialAndTooltip_When_TaskIsAssigned', () => {
+      component['updateState']({ loading: false, tasks: [mockTasks[0]], activeTab: 'board' });
+      fixture.detectChanges();
+
+      const avatarEl = fixture.nativeElement.querySelector('.card-assignee-avatar');
+      expect(avatarEl).toBeTruthy();
+      expect(avatarEl.classList.contains('unassigned')).toBeFalse();
+      expect(avatarEl.textContent.trim()).toBe('A');
+
+      const tooltipEl = fixture.nativeElement.querySelector('app-tooltip');
+      expect(tooltipEl).toBeTruthy();
+      expect(avatarEl.getAttribute('aria-label')).toBe('alex_dev');
+    });
+
+    it('DOM_Should_RenderHumanIconWithUnassignedTooltip_When_TaskIsUnassigned', () => {
+      component['updateState']({ loading: false, tasks: [mockTasks[1]], activeTab: 'board' });
+      fixture.detectChanges();
+
+      const avatarEl = fixture.nativeElement.querySelector('.card-assignee-avatar');
+      expect(avatarEl).toBeTruthy();
+      expect(avatarEl.classList.contains('unassigned')).toBeTrue();
+
+      const humanIcon = avatarEl.querySelector('.avatar-human-icon');
+      expect(humanIcon).toBeTruthy();
+
+      const tooltipEl = fixture.nativeElement.querySelector('app-tooltip');
+      expect(tooltipEl).toBeTruthy();
+      expect(avatarEl.getAttribute('aria-label')).toBe('Unassigned');
+    });
   });
 });
