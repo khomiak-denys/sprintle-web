@@ -96,6 +96,10 @@ export class WorkspacesComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.authService.isAdmin()) {
+      this.router.navigate(['/admin']);
+      return;
+    }
     this.updateState({ userInitial: this.calculateUserInitial() });
     this.refreshWorkspaces();
   }

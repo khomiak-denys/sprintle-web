@@ -376,96 +376,86 @@
         </button>
       </div>
 
-      <form [formGroup]="createForm" (ngSubmit)="submitCreateWorkspace()" class="azure-modal-form">
-        @if (authService.isManager() || authService.isAdmin()) {
-          <div class="permission-notice permission-notice-verified">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            <span>Manager role verified. You have full workspace provisioning rights.</span>
+      @if (authService.isManager() || authService.isAdmin()) {
+        <form
+          [formGroup]="createForm"
+          (ngSubmit)="submitCreateWorkspace()"
+          class="azure-modal-form"
+        >
+          <div class="form-field">
+            <label for="ws-name-input">Workspace Name *</label>
+            <input
+              type="text"
+              id="ws-name-input"
+              class="azure-input"
+              formControlName="name"
+              placeholder="e.g. Analytics Platform"
+              autocomplete="off"
+            />
+            @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['required']) {
+              <span class="field-error">Name is required</span>
+            }
+            @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['minlength']) {
+              <span class="field-error">Name must be at least 3 characters</span>
+            }
           </div>
-        } @else {
-          <div class="permission-notice permission-notice-warning">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+
+          <div class="form-field">
+            <label for="ws-desc-input">Description</label>
+            <textarea
+              id="ws-desc-input"
+              class="azure-textarea"
+              formControlName="description"
+              rows="3"
+              placeholder="Describe the projects, domain, and goals for this workspace..."
+            ></textarea>
+          </div>
+
+          <div class="modal-footer modal-footer-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="closeCreateModal()"
+              [disabled]="(state$ | async)?.submitting"
             >
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="createForm.invalid || (state$ | async)?.submitting"
+              id="submit-create-workspace-btn"
+            >
+              @if ((state$ | async)?.submitting) {
+                <span class="btn-spinner"></span>
+                <span>Creating...</span>
+              } @else {
+                <span>Create Workspace</span>
+              }
+            </button>
+          </div>
+        </form>
+      } @else {
+        <div class="azure-modal-form unauthorized-modal-body">
+          <div class="permission-notice permission-notice-warning">
             <span
               >Workspace creation requires the <strong>Manager</strong> role in the backend. You can
-              manage roles in the Admin Console.</span
+              contact an administrator to request access.</span
             >
           </div>
-        }
 
-        <div class="form-field">
-          <label for="ws-name-input">Workspace Name *</label>
-          <input
-            type="text"
-            id="ws-name-input"
-            class="azure-input"
-            formControlName="name"
-            placeholder="e.g. Analytics Platform"
-            autocomplete="off"
-          />
-          @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['required']) {
-            <span class="field-error">Name is required</span>
-          }
-          @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['minlength']) {
-            <span class="field-error">Name must be at least 3 characters</span>
-          }
+          <div class="modal-footer modal-footer-actions">
+            <button type="button" class="btn-secondary" (click)="closeCreateModal()">Cancel</button>
+            <a
+              href="mailto:admin@gmail.com"
+              class="btn-primary btn-contact-admin"
+              id="btn-contact-admin"
+            >
+              Contact Admin
+            </a>
+          </div>
         </div>
-
-        <div class="form-field">
-          <label for="ws-desc-input">Description</label>
-          <textarea
-            id="ws-desc-input"
-            class="azure-textarea"
-            formControlName="description"
-            rows="3"
-            placeholder="Describe the projects, domain, and goals for this workspace..."
-          ></textarea>
-        </div>
-
-        <div class="modal-footer-actions">
-          <button
-            type="button"
-            class="btn-secondary"
-            (click)="closeCreateModal()"
-            [disabled]="(state$ | async)?.submitting"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            class="btn-primary"
-            [disabled]="createForm.invalid || (state$ | async)?.submitting"
-            id="submit-create-workspace-btn"
-          >
-            @if ((state$ | async)?.submitting) {
-              <span class="btn-spinner"></span>
-              <span>Creating...</span>
-            } @else {
-              <span>Create Workspace</span>
-            }
-          </button>
-        </div>
-      </form>
+      }
     </div>
   }
 </div>

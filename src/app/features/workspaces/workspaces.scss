@@ -279,6 +279,39 @@
   gap: 1.25rem;
 }
 
+.no-workspaces-box {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4.5rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  svg {
+    color: #a19f9d;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #201f1e;
+    margin: 0 0 0.5rem 0;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: #605e5c;
+    margin: 0;
+    max-width: 420px;
+    line-height: 1.5;
+  }
+}
+
 .workspace-card {
   background: #ffffff;
   border: 1px solid #edebe9;
@@ -478,4 +511,21 @@
     color: #797673;
     border: 1px solid #f3e5b3;
   }
+}
+
+/* ==========================================================================
+   Workspace Modal Additions
+   ========================================================================== */
+.btn-contact-admin {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.permission-notice {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #323130;
 }
