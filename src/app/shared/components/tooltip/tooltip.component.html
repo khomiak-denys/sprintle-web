@@ -1,0 +1,17 @@
+<div
+  class="tooltip-wrapper"
+  (mouseenter)="show()"
+  (mouseleave)="hide()"
+  (focusin)="show()"
+  (focusout)="hide()"
+  tabindex="0"
+  [attr.aria-label]="text"
+>
+  <ng-content></ng-content>
+  @if (isVisible && text) {
+    <div class="tooltip-bubble" [class]="'tooltip-' + position" role="tooltip">
+      <span class="tooltip-content">{{ text }}</span>
+      <span class="tooltip-arrow"></span>
+    </div>
+  }
+</div>
