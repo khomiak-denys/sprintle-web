@@ -400,6 +400,12 @@ $az-task-gold: #ffb900;
   &.creator-avatar {
     background: #008272;
   }
+
+  &.unassigned {
+    background: #f3f2f1;
+    color: #605e5c;
+    border: 1px dashed #c8c6c4;
+  }
 }
 
 .person-details {

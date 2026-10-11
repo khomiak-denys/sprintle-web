@@ -47,26 +47,6 @@
       </div>
 
       <div class="ribbon-actions">
-        <button
-          type="button"
-          class="ribbon-btn ribbon-btn-action"
-          (click)="onLogTime()"
-          id="btn-details-log-time"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          <span>Log Time</span>
-        </button>
-
         @if (task.status !== 'Done') {
           <button
             type="button"
@@ -275,7 +255,23 @@
           <div class="person-field">
             <span class="field-label">Assigned To</span>
             <div class="person-row">
-              <span class="person-avatar">{{ getAssigneeInitial() }}</span>
+              @if (task.assignee) {
+                <span class="person-avatar">{{ getAssigneeInitial() }}</span>
+              } @else {
+                <span class="person-avatar unassigned" title="Unassigned">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </span>
+              }
               <div class="person-details">
                 <span class="person-name">{{ getAssigneeName() }}</span>
                 @if (task.assignee?.email; as email) {
@@ -326,13 +322,7 @@
           </div>
           <div class="attr-row">
             <span class="attr-label">Updated At</span>
-            <span class="attr-value date-val">{{
-              (task.updatedAt | date: 'short') || 'Never'
-            }}</span>
-          </div>
-          <div class="attr-row">
-            <span class="attr-label">Full ID</span>
-            <span class="attr-value id-code" title="{{ task.id }}">{{ task.id }}</span>
+            <span class="attr-value date-val">{{ (task.updatedAt | date: 'short') || 'N/A' }}</span>
           </div>
         </section>
       </aside>
