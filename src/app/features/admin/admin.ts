@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -23,7 +23,6 @@ import { TaskResult, TaskDetailsResult, TaskStatus } from '../../core/models/tas
 import { Workspace } from '../../core/models/workspace.models';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { ProfileComponent } from '../profile/profile';
-import { TaskDetailsComponent } from '../dashboard/task-details/task-details.component';
 
 export type AdminTab = 'users' | 'tasks' | 'workspaces';
 
@@ -73,16 +72,8 @@ export interface AdminState {
 
   // Workspaces Management
   readonly workspaces: Workspace[];
+  readonly workspacesLoading: boolean;
   readonly workspaceSearchQuery: string;
-  readonly isWorkspaceModalOpen: boolean;
-  readonly workspaceModalMode: 'create' | 'edit';
-  readonly editingWorkspaceId: string | null;
-  readonly workspaceFormName: string;
-  readonly workspaceFormCode: string;
-  readonly workspaceFormDescription: string;
-  readonly workspaceFormColor: string;
-  readonly workspaceFormRole: 'Owner' | 'Admin' | 'Contributor' | 'Reader';
-  readonly workspaceFormIsDefault: boolean;
 
   // Workspace Deletion Confirmation
   readonly workspaceToDelete: Workspace | null;
@@ -132,16 +123,8 @@ const initialAdminState: AdminState = {
   taskDetailsLoading: false,
 
   workspaces: [],
+  workspacesLoading: false,
   workspaceSearchQuery: '',
-  isWorkspaceModalOpen: false,
-  workspaceModalMode: 'create',
-  editingWorkspaceId: null,
-  workspaceFormName: '',
-  workspaceFormCode: '',
-  workspaceFormDescription: '',
-  workspaceFormColor: '#0078D4',
-  workspaceFormRole: 'Admin',
-  workspaceFormIsDefault: false,
 
   workspaceToDelete: null,
   isDeleteWorkspaceModalOpen: false,
@@ -153,13 +136,7 @@ const initialAdminState: AdminState = {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    ProfileComponent,
-    TaskDetailsComponent,
-  ],
+  imports: [CommonModule, FormsModule, ProfileComponent],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -218,17 +195,6 @@ export class AdminComponent implements OnInit {
     }),
   );
 
-  readonly availableWorkspaceColors: string[] = [
-    '#0078D4', // Azure Blue
-    '#107C10', // Microsoft Green
-    '#5C2D91', // Deep Purple
-    '#D83B01', // Burnt Orange
-    '#008272', // Teal
-    '#E3008C', // Magenta
-    '#004E8C', // Navy
-    '#881798', // Grape
-  ];
-
   private readonly destroyRef = inject(DestroyRef);
   private readonly elementRef = inject(ElementRef);
 
@@ -247,6 +213,7 @@ export class AdminComponent implements OnInit {
     this.loadUsers();
     this.loadTasks();
     this.loadAvailableRoles();
+    this.subscribeToWorkspaces();
     this.loadWorkspaces();
   }
 
@@ -258,8 +225,6 @@ export class AdminComponent implements OnInit {
       this.closeDeleteModal();
     } else if (this.snapshot.isDeleteWorkspaceModalOpen) {
       this.closeDeleteWorkspaceModal();
-    } else if (this.snapshot.isWorkspaceModalOpen) {
-      this.closeWorkspaceModal();
     } else if (this.snapshot.isRolesModalOpen) {
       this.closeRolesModal();
     } else if (this.snapshot.isProfileDrawerOpen) {
@@ -272,6 +237,9 @@ export class AdminComponent implements OnInit {
   // Tab Navigation
   setActiveTab(tab: AdminTab): void {
     this.updateState({ activeTab: tab });
+    if (tab === 'workspaces') {
+      this.loadWorkspaces();
+    }
   }
 
   // -------------------------------------------------------------
@@ -596,7 +564,8 @@ export class AdminComponent implements OnInit {
         next: () => {
           this.notificationService.success('Task marked as completed.');
           this.updateState({
-            selectedTaskDetails: { ...task, status: 'Done' },
+            selectedTaskDetails: null,
+            isTaskBladeOpen: false,
             tasks: this.snapshot.tasks.map((t) =>
               t.id === task.id ? { ...t, status: 'Done' } : t,
             ),
@@ -619,7 +588,8 @@ export class AdminComponent implements OnInit {
         next: () => {
           this.notificationService.info('Task cancelled.');
           this.updateState({
-            selectedTaskDetails: { ...task, status: 'Cancelled' },
+            selectedTaskDetails: null,
+            isTaskBladeOpen: false,
             tasks: this.snapshot.tasks.map((t) =>
               t.id === task.id ? { ...t, status: 'Cancelled' } : t,
             ),
@@ -635,7 +605,7 @@ export class AdminComponent implements OnInit {
   // Workspaces Management
   // -------------------------------------------------------------
 
-  private loadWorkspaces(): void {
+  private subscribeToWorkspaces(): void {
     this.workspaceService.workspaces$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((workspaces) => {
@@ -643,130 +613,27 @@ export class AdminComponent implements OnInit {
       });
   }
 
+  loadWorkspaces(): void {
+    this.updateState({ workspacesLoading: true });
+    this.workspaceService
+      .loadWorkspaces()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (workspaces) => {
+          this.updateState({
+            workspaces,
+            workspacesLoading: false,
+          });
+        },
+        error: () => {
+          this.updateState({ workspacesLoading: false });
+          this.notificationService.error('Failed to load workspaces list.');
+        },
+      });
+  }
+
   onWorkspaceSearchChange(query: string): void {
     this.updateState({ workspaceSearchQuery: query });
-  }
-
-  openCreateWorkspaceModal(): void {
-    this.updateState({
-      isWorkspaceModalOpen: true,
-      workspaceModalMode: 'create',
-      editingWorkspaceId: null,
-      workspaceFormName: '',
-      workspaceFormCode: '',
-      workspaceFormDescription: '',
-      workspaceFormColor: '#0078D4',
-      workspaceFormRole: 'Admin',
-      workspaceFormIsDefault: false,
-    });
-  }
-
-  openEditWorkspaceModal(ws: Workspace): void {
-    this.updateState({
-      isWorkspaceModalOpen: true,
-      workspaceModalMode: 'edit',
-      editingWorkspaceId: ws.id,
-      workspaceFormName: ws.name,
-      workspaceFormCode: ws.code,
-      workspaceFormDescription: ws.description,
-      workspaceFormColor: ws.color,
-      workspaceFormRole: ws.role,
-      workspaceFormIsDefault: !!ws.isDefault,
-    });
-  }
-
-  closeWorkspaceModal(): void {
-    this.updateState({
-      isWorkspaceModalOpen: false,
-      editingWorkspaceId: null,
-    });
-  }
-
-  onWorkspaceFormNameChange(value: string): void {
-    const trimmed = value;
-    let suggestedCode = this.snapshot.workspaceFormCode;
-    if (this.snapshot.workspaceModalMode === 'create' && !suggestedCode) {
-      suggestedCode = trimmed
-        .replace(/[^a-zA-Z]/g, '')
-        .substring(0, 4)
-        .toUpperCase();
-    }
-    this.updateState({
-      workspaceFormName: trimmed,
-      workspaceFormCode: suggestedCode,
-    });
-  }
-
-  onWorkspaceFormCodeChange(value: string): void {
-    this.updateState({ workspaceFormCode: value.toUpperCase().trim() });
-  }
-
-  onWorkspaceFormDescriptionChange(value: string): void {
-    this.updateState({ workspaceFormDescription: value });
-  }
-
-  onWorkspaceFormRoleChange(role: 'Owner' | 'Admin' | 'Contributor' | 'Reader'): void {
-    this.updateState({ workspaceFormRole: role });
-  }
-
-  onWorkspaceFormColorSelect(color: string): void {
-    this.updateState({ workspaceFormColor: color });
-  }
-
-  onWorkspaceFormIsDefaultChange(isDefault: boolean): void {
-    this.updateState({ workspaceFormIsDefault: isDefault });
-  }
-
-  isWorkspaceFormValid(): boolean {
-    return (
-      this.snapshot.workspaceFormName.trim().length >= 2 &&
-      this.snapshot.workspaceFormCode.trim().length >= 2
-    );
-  }
-
-  saveWorkspace(): void {
-    if (!this.isWorkspaceFormValid()) return;
-
-    const {
-      workspaceModalMode,
-      editingWorkspaceId,
-      workspaceFormName,
-      workspaceFormCode,
-      workspaceFormDescription,
-      workspaceFormColor,
-      workspaceFormRole,
-      workspaceFormIsDefault,
-    } = this.snapshot;
-
-    const name = workspaceFormName.trim();
-    const code = workspaceFormCode.trim().toUpperCase();
-    const description = workspaceFormDescription.trim();
-
-    if (workspaceModalMode === 'create') {
-      this.workspaceService.createWorkspace({
-        name,
-        code,
-        description,
-        color: workspaceFormColor,
-        role: workspaceFormRole,
-        isDefault: workspaceFormIsDefault,
-        memberCount: 1,
-        taskCount: 0,
-      });
-      this.notificationService.success(`Workspace '${name}' created successfully.`);
-    } else if (editingWorkspaceId) {
-      this.workspaceService.updateWorkspace(editingWorkspaceId, {
-        name,
-        code,
-        description,
-        color: workspaceFormColor,
-        role: workspaceFormRole,
-        isDefault: workspaceFormIsDefault,
-      });
-      this.notificationService.success(`Workspace '${name}' updated successfully.`);
-    }
-
-    this.closeWorkspaceModal();
   }
 
   openDeleteWorkspaceModal(ws: Workspace): void {
@@ -804,11 +671,17 @@ export class AdminComponent implements OnInit {
   onSelectAndSwitchWorkspace(ws: Workspace): void {
     this.workspaceService.selectWorkspace(ws);
     this.notificationService.success(`Switched active workspace to '${ws.name}'.`);
+    this.router.navigate(['/']);
   }
 
   getUserInitial(user: UserResult): string {
     const name = user.fullName || user.userName || user.email;
     return name.trim().charAt(0).toUpperCase() || '?';
+  }
+
+  getWorkspaceInitial(name: string | null | undefined): string {
+    const trimmed = name?.trim();
+    return trimmed ? trimmed.charAt(0).toUpperCase() : 'W';
   }
 
   @HostListener('document:click', ['$event'])
