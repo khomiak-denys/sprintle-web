@@ -107,11 +107,14 @@ export class ProfileComponent implements OnInit {
     return this.computeViewState(this.stateSubject.value);
   }
 
+  get backToDashboardRoute(): string {
+    return this.authService.isAdmin() ? '/admin' : '/';
+  }
+
   protected readonly profileForm: FormGroup;
   protected readonly passwordForm: FormGroup;
 
   private readonly destroyRef = inject(DestroyRef);
-
 
   constructor(
     protected readonly authService: AuthService,
@@ -279,7 +282,9 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: () => {
           const current = this.stateSubject.value.profile;
-          const updated = current ? { ...current, userName: cleanUserName, fullName: cleanFullName } : null;
+          const updated = current
+            ? { ...current, userName: cleanUserName, fullName: cleanFullName }
+            : null;
           this.updateState({
             savingProfile: false,
             profileSuccessMessage: 'Profile updated successfully.',
@@ -390,13 +395,17 @@ export class ProfileComponent implements OnInit {
     const tokenUser =
       typeof this.authService?.currentUser === 'function' ? this.authService.currentUser() : null;
     const tokenUid =
-      typeof this.authService?.currentUserId === 'function' ? this.authService.currentUserId() : null;
+      typeof this.authService?.currentUserId === 'function'
+        ? this.authService.currentUserId()
+        : null;
 
     const currentSessionUserId =
       tokenUid ||
       tokenUser?.sub ||
       (tokenUser?.['nameid'] as string) ||
-      (tokenUser?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] as string) ||
+      (tokenUser?.[
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'
+      ] as string) ||
       '';
 
     const targetUserId = state.routeUserId || currentSessionUserId;

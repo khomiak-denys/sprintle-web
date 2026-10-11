@@ -30,7 +30,13 @@ describe('ProfileComponent', () => {
   };
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUserId', 'currentUser', 'logout']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', [
+      'currentUserId',
+      'currentUser',
+      'logout',
+      'isAdmin',
+    ]);
+    authServiceSpy.isAdmin.and.returnValue(false);
     authServiceSpy.currentUserId.and.returnValue('user-123');
     authServiceSpy.currentUser.and.returnValue({
       sub: 'user-123',
@@ -48,7 +54,11 @@ describe('ProfileComponent', () => {
     ]);
     userServiceSpy.getProfile.and.returnValue(of(mockProfile));
 
-    notificationServiceSpy = jasmine.createSpyObj('NotificationService', ['success', 'error', 'info']);
+    notificationServiceSpy = jasmine.createSpyObj('NotificationService', [
+      'success',
+      'error',
+      'info',
+    ]);
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, ReactiveFormsModule],
@@ -190,6 +200,18 @@ describe('ProfileComponent', () => {
 
     expect(component.snapshot.confirmingEmail).toBeFalse();
     expect(component.snapshot.profile?.emailConfirmed).toBeTrue();
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Email confirmed successfully! (Mocked)');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+      'Email confirmed successfully! (Mocked)',
+    );
   }));
+
+  it('backToDashboardRoute_Should_ReturnAdminDashboard_When_UserIsAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(true);
+    expect(component.backToDashboardRoute).toBe('/admin');
+  });
+
+  it('backToDashboardRoute_Should_ReturnRootDashboard_When_UserIsNotAdmin', () => {
+    authServiceSpy.isAdmin.and.returnValue(false);
+    expect(component.backToDashboardRoute).toBe('/');
+  });
 });
