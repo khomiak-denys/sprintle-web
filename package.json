@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "env": "node scripts/set-env.js",
+    "prestart": "node scripts/set-env.js",
+    "predev": "node scripts/set-env.js",
+    "prebuild": "node scripts/set-env.js",
+    "pretest": "node scripts/set-env.js",
     "start": "ng serve --open",
     "dev": "ng serve --port 4201",
     "build": "ng build",
