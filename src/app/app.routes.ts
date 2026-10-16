@@ -37,6 +37,20 @@ export const routes: Routes = [
     loadComponent: () => import('./features/admin/admin').then((m) => m.AdminComponent),
   },
   {
+    path: 'email-confirmation',
+    loadComponent: () =>
+      import('./features/email-confirmation/email-confirmation').then(
+        (m) => m.EmailConfirmationComponent,
+      ),
+  },
+  {
+    path: 'confirm-email',
+    loadComponent: () =>
+      import('./features/email-confirmation/email-confirmation').then(
+        (m) => m.EmailConfirmationComponent,
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

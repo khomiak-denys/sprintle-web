@@ -195,13 +195,13 @@
                           <button
                             type="button"
                             class="btn-secondary btn-sm"
-                            (click)="onConfirmEmailMock()"
+                            (click)="onConfirmEmail()"
                             [disabled]="vm.confirmingEmail"
                             id="btn-confirm-email"
                           >
                             @if (vm.confirmingEmail) {
                               <span class="btn-spinner"></span>
-                              <span>Confirming...</span>
+                              <span>Sending...</span>
                             } @else {
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -219,7 +219,9 @@
                               <span>Confirm Email</span>
                             }
                           </button>
-                          <span class="field-hint">Click to confirm your email (mock).</span>
+                          <span class="field-hint"
+                            >Click to send a confirmation link to your email.</span
+                          >
                         </div>
                       } @else {
                         <span class="field-hint"

@@ -35,7 +35,9 @@ describe('ProfileComponent', () => {
       'currentUser',
       'logout',
       'isAdmin',
+      'confirmEmail',
     ]);
+    authServiceSpy.confirmEmail.and.returnValue(of(undefined as void));
     authServiceSpy.isAdmin.and.returnValue(false);
     authServiceSpy.currentUserId.and.returnValue('user-123');
     authServiceSpy.currentUser.and.returnValue({
@@ -192,18 +194,38 @@ describe('ProfileComponent', () => {
     expect(component.snapshot.profileErrorMessage).toBe('Access denied');
   });
 
-  it('onConfirmEmailMock_Should_UpdateEmailConfirmed_When_Invoked', fakeAsync(() => {
-    component['onConfirmEmailMock']();
-    expect(component.snapshot.confirmingEmail).toBeTrue();
+  it('onConfirmEmail_Should_CallAuthServiceAndNotify_When_Invoked', () => {
+    authServiceSpy.confirmEmail.and.returnValue(of(undefined as void));
 
-    tick(700);
+    component['onConfirmEmail']();
+
+    expect(authServiceSpy.confirmEmail).toHaveBeenCalledWith('john@example.com');
+    expect(component.snapshot.confirmingEmail).toBeFalse();
+    expect(component.snapshot.profileSuccessMessage).toBe(
+      'Confirmation email sent! Please check your inbox.',
+    );
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+      'Confirmation email sent! Please check your inbox.',
+    );
+  });
+
+  it('onConfirmEmail_Should_SetErrorMessage_When_ServiceFails', () => {
+    authServiceSpy.confirmEmail.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 400,
+            error: { detail: 'Email is already confirmed' },
+          }),
+      ),
+    );
+
+    component['onConfirmEmail']();
 
     expect(component.snapshot.confirmingEmail).toBeFalse();
-    expect(component.snapshot.profile?.emailConfirmed).toBeTrue();
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
-      'Email confirmed successfully! (Mocked)',
-    );
-  }));
+    expect(component.snapshot.profileErrorMessage).toBe('Email is already confirmed');
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Email is already confirmed');
+  });
 
   it('backToDashboardRoute_Should_ReturnAdminDashboard_When_UserIsAdmin', () => {
     authServiceSpy.isAdmin.and.returnValue(true);

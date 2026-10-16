@@ -3,7 +3,13 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, distinctUntilChanged, map, tap, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest, RegisterRequest, AuthResponse, JwtPayload } from '../models/auth.models';
+import {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  JwtPayload,
+  FinishEmailConfirmationRequest,
+} from '../models/auth.models';
 
 const TOKEN_KEY = 'access_token';
 
@@ -149,6 +155,30 @@ export class AuthService {
     return this.http
       .post<void>(`${this.apiUrl}/revoke`, null, { withCredentials: true })
       .pipe(tap(() => this.clearToken()));
+  }
+
+  /**
+   * POST /api/v1/auth/confirm-email
+   * Requests an email confirmation token and triggers confirmation email dispatch.
+   */
+  confirmEmail(email?: string): Observable<void> {
+    const payload = email ? { email } : {};
+    return this.http.post<void>(`${this.apiUrl}/confirm-email`, payload, {
+      withCredentials: true,
+    });
+  }
+
+  /**
+   * POST /api/v1/auth/confirm-email/finish
+   * Verifies the email confirmation token and marks the email as confirmed.
+   */
+  finishEmailConfirmation(token: string, userId?: string, email?: string): Observable<void> {
+    const payload: FinishEmailConfirmationRequest = { token };
+    if (userId) payload.userId = userId;
+    if (email) payload.email = email;
+    return this.http.post<void>(`${this.apiUrl}/confirm-email/finish`, payload, {
+      withCredentials: true,
+    });
   }
 
   /** Remove local token and navigate to auth page. */

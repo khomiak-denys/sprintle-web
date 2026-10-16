@@ -1,0 +1,280 @@
+<div class="confirmation-container">
+  <div class="confirmation-backdrop"></div>
+
+  <div class="confirmation-card" id="email-confirmation-card">
+    <!-- Header with logo area -->
+    <div class="confirmation-header">
+      <div class="confirmation-logo">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M12 2L2 7V10C2 16.5 6.84 22.74 12 24C17.16 22.74 22 16.5 22 10V7L12 2Z"
+            fill="url(#shield-gradient)"
+            opacity="0.9"
+          />
+          <path
+            d="M9 12L11 14L15 10"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <defs>
+            <linearGradient id="shield-gradient" x1="2" y1="2" x2="22" y2="24">
+              <stop stop-color="#0078D4" />
+              <stop offset="1" stop-color="#00BCF2" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="confirmation-logo-text">Task Tracker</span>
+      </div>
+      <p class="confirmation-brand-subtitle">Account Verification</p>
+    </div>
+
+    @if (state$ | async; as state) {
+      <!-- 1. Verifying State -->
+      @if (state.status === 'verifying') {
+        <div class="status-content status-verifying" id="status-verifying">
+          <div class="spinner-container">
+            <div class="azure-spinner" aria-label="Verifying token"></div>
+          </div>
+          <h1 class="status-title">Verifying your email</h1>
+          <p class="status-description">
+            Please wait while we confirm your email address and update your account.
+          </p>
+        </div>
+      }
+
+      <!-- 2. Success State -->
+      @if (state.status === 'success') {
+        <div class="status-content status-success" id="status-success">
+          <div class="status-icon-wrapper success">
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
+                stroke="#107C41"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M22 4L12 14.01L9 11.01"
+                stroke="#107C41"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <h1 class="status-title">Email Verified!</h1>
+          <p class="status-description">
+            {{ state.message }}
+          </p>
+          @if (state.email) {
+            <div class="user-badge" id="confirmed-email-badge">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 4L8 8.5L14 4M2 4V12H14V4M2 4H14"
+                  stroke="currentColor"
+                  stroke-width="1.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{{ state.email }}</span>
+            </div>
+          }
+          <div class="close-info" id="auto-close-info">
+            <p class="close-page-text">You can close this page.</p>
+            @if (state.countdown !== null && state.countdown > 0) {
+              <p class="countdown-text">
+                Closing automatically in {{ state.countdown }} second{{
+                  state.countdown === 1 ? '' : 's'
+                }}...
+              </p>
+            } @else {
+              <p class="countdown-text">Closing window...</p>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- 3. Error State -->
+      @if (state.status === 'error') {
+        <div class="status-content status-error" id="status-error">
+          <div class="status-icon-wrapper error">
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="12" cy="12" r="10" stroke="#D13438" stroke-width="2.2" />
+              <line
+                x1="12"
+                y1="8"
+                x2="12"
+                y2="12"
+                stroke="#D13438"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              />
+              <line
+                x1="12"
+                y1="16"
+                x2="12.01"
+                y2="16"
+                stroke="#D13438"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <h1 class="status-title">Verification Failed</h1>
+          <div class="error-banner" role="alert">
+            <p>{{ state.message }}</p>
+          </div>
+
+          @if (state.resendSuccess) {
+            <div class="resend-success-banner" role="status">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M13.5 4.5L6.5 11.5L3 8"
+                  stroke="#107C41"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>A new verification email has been sent. Please check your inbox.</span>
+            </div>
+          }
+
+          <div class="action-buttons">
+            @if (state.token) {
+              <button
+                type="button"
+                class="btn-primary full-width"
+                id="btn-retry-verification"
+                (click)="retry()"
+              >
+                Try Again
+              </button>
+            }
+
+            @if (state.email || authService.currentUser()?.email) {
+              <button
+                type="button"
+                class="btn-secondary full-width"
+                id="btn-resend-confirmation"
+                [disabled]="state.resending"
+                (click)="resendConfirmationEmail()"
+              >
+                @if (state.resending) {
+                  <span class="btn-spinner"></span>
+                  <span>Sending...</span>
+                } @else {
+                  <span>Resend Confirmation Email</span>
+                }
+              </button>
+            }
+
+            <button
+              type="button"
+              class="btn-text full-width"
+              id="btn-back-signin"
+              (click)="navigateToSignIn()"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- 4. Missing Token State -->
+      @if (state.status === 'missing-token') {
+        <div class="status-content status-warning" id="status-missing-token">
+          <div class="status-icon-wrapper warning">
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.29 3.86L1.82 18C1.64 18.3 1.55 18.65 1.55 19C1.55 20.1 2.45 21 3.55 21H20.45C21.55 21 22.45 20.1 22.45 19C22.45 18.65 22.36 18.3 22.18 18L13.71 3.86C13.33 3.2 12.63 2.8 12 2.8C11.37 2.8 10.67 3.2 10.29 3.86Z"
+                stroke="#797775"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <line
+                x1="12"
+                y1="9"
+                x2="12"
+                y2="13"
+                stroke="#797775"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <line
+                x1="12"
+                y1="17"
+                x2="12.01"
+                y2="17"
+                stroke="#797775"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <h1 class="status-title">Invalid Verification Link</h1>
+          <p class="status-description">
+            {{ state.message }}
+          </p>
+
+          <div class="action-buttons">
+            @if (state.email || authService.currentUser()?.email) {
+              <button
+                type="button"
+                class="btn-primary full-width"
+                id="btn-request-link"
+                [disabled]="state.resending"
+                (click)="resendConfirmationEmail()"
+              >
+                @if (state.resending) {
+                  <span class="btn-spinner"></span>
+                  <span>Sending...</span>
+                } @else {
+                  <span>Request Verification Email</span>
+                }
+              </button>
+            }
+
+            <button
+              type="button"
+              class="btn-secondary full-width"
+              id="btn-missing-signin"
+              (click)="navigateToSignIn()"
+            >
+              Go to Sign In
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

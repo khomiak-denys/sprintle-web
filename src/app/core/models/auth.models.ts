@@ -31,3 +31,10 @@ export interface JwtPayload {
   iat: number;
   [key: string]: unknown;
 }
+
+/** Request body for POST /api/v1/auth/confirm-email/finish */
+export interface FinishEmailConfirmationRequest {
+  token: string;
+  userId?: string;
+  email?: string;
+}

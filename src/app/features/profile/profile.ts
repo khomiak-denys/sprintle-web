@@ -224,7 +224,7 @@ export class ProfileComponent implements OnInit {
       });
   }
 
-  protected onConfirmEmailMock(): void {
+  protected onConfirmEmail(): void {
     if (this.stateSubject.value.confirmingEmail) return;
     this.updateState({
       confirmingEmail: true,
@@ -232,16 +232,38 @@ export class ProfileComponent implements OnInit {
       profileSuccessMessage: null,
     });
 
-    setTimeout(() => {
-      const current = this.stateSubject.value.profile;
-      this.updateState({
-        confirmingEmail: false,
-        profile: current ? { ...current, emailConfirmed: true } : current,
-        profileSuccessMessage: 'Email confirmed successfully! (Mocked)',
+    const email = this.stateSubject.value.profile?.email || this.authService.currentUser()?.email;
+
+    this.authService
+      .confirmEmail(email || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.updateState({
+            confirmingEmail: false,
+            profileSuccessMessage: 'Confirmation email sent! Please check your inbox.',
+          });
+          this.notificationService.success('Confirmation email sent! Please check your inbox.');
+          this.expandSection('personal');
+        },
+        error: (err: HttpErrorResponse) => {
+          let errorMsg = 'Failed to send confirmation email. Please try again.';
+          if (err.error?.detail || err.error?.message) {
+            errorMsg = err.error?.detail ?? err.error?.message;
+          }
+          this.updateState({
+            confirmingEmail: false,
+            profileErrorMessage: errorMsg,
+          });
+          this.notificationService.error(errorMsg);
+          this.expandSection('personal');
+        },
       });
-      this.notificationService.success('Email confirmed successfully! (Mocked)');
-      this.expandSection('personal');
-    }, 700);
+  }
+
+  /** Backwards compatibility alias for onConfirmEmail. */
+  protected onConfirmEmailMock(): void {
+    this.onConfirmEmail();
   }
 
   protected onSaveProfile(): void {

@@ -73,9 +73,11 @@ describe('AuthService', () => {
   it('register_Should_StoreTokenAndEmit_When_RequestSucceeds', () => {
     const mockToken = createMockJwt('user-2', 'new@example.com', 3600);
 
-    service.register({ email: 'new@example.com', userName: 'newuser', password: 'password123' }).subscribe((token) => {
-      expect(token).toBe(mockToken);
-    });
+    service
+      .register({ email: 'new@example.com', userName: 'newuser', password: 'password123' })
+      .subscribe((token) => {
+        expect(token).toBe(mockToken);
+      });
 
     const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/v1/auth/register`);
     expect(req.request.method).toBe('POST');
@@ -137,5 +139,49 @@ describe('AuthService', () => {
     const expiredToken = createMockJwt('user-expired', 'expired@example.com', -100);
     localStorage.setItem('access_token', expiredToken);
     expect(service.isAuthenticated()).toBeFalse();
+  });
+
+  it('confirmEmail_Should_SendPostRequestWithEmail_When_EmailProvided', () => {
+    service.confirmEmail('user@example.com').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/v1/auth/confirm-email`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email: 'user@example.com' });
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
+  });
+
+  it('confirmEmail_Should_SendPostRequestWithEmptyPayload_When_NoEmailProvided', () => {
+    service.confirmEmail().subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/v1/auth/confirm-email`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
+  });
+
+  it('finishEmailConfirmation_Should_SendPostRequestWithAllParameters_When_Invoked', () => {
+    service.finishEmailConfirmation('test-token', 'user-123', 'user@example.com').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/v1/auth/confirm-email/finish`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      token: 'test-token',
+      userId: 'user-123',
+      email: 'user@example.com',
+    });
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
+  });
+
+  it('finishEmailConfirmation_Should_SendPostRequestWithOnlyToken_When_UserIdAndEmailOmitted', () => {
+    service.finishEmailConfirmation('test-token').subscribe();
+
+    const req = httpMock.expectOne(`${environment.apiBaseUrl}/api/v1/auth/confirm-email/finish`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ token: 'test-token' });
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
   });
 });
