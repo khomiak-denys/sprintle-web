@@ -1,0 +1,258 @@
+/* ================================================================
+   Azure-inspired Email Confirmation Page Styles
+   ================================================================ */
+
+$azure-primary: #0078d4;
+$azure-primary-hover: #106ebe;
+$azure-accent: #00bcf2;
+$azure-card-bg: #ffffff;
+$azure-text-primary: #323130;
+$azure-text-secondary: #605e5c;
+$azure-text-tertiary: #a19f9d;
+$azure-border: #e1dfdd;
+$azure-error: #d13438;
+$azure-error-bg: #fde7e9;
+$azure-success: #107c41;
+$azure-success-bg: #dff6dd;
+$azure-warning: #797775;
+$azure-warning-bg: #fff4ce;
+$azure-shadow-md: 0 6px 24px rgba(0, 0, 0, 0.08);
+
+.confirmation-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: #ffffff;
+}
+
+.confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #ffffff;
+}
+
+.confirmation-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  background: $azure-card-bg;
+  border: 1px solid $azure-border;
+  border-radius: 8px;
+  box-shadow: $azure-shadow-md;
+  padding: 2.5rem 2rem 2rem;
+  animation: cardSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  text-align: center;
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confirmation-header {
+  margin-bottom: 2rem;
+}
+
+.confirmation-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.confirmation-logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: $azure-text-primary;
+  letter-spacing: -0.02em;
+}
+
+.confirmation-brand-subtitle {
+  font-size: 0.8125rem;
+  color: $azure-text-secondary;
+  margin-top: 0.25rem;
+}
+
+.status-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.status-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+
+  &.success {
+    background: $azure-success-bg;
+  }
+
+  &.error {
+    background: $azure-error-bg;
+  }
+
+  &.warning {
+    background: $azure-warning-bg;
+  }
+}
+
+.spinner-container {
+  margin: 1.5rem 0 1.75rem;
+}
+
+.azure-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(0, 120, 212, 0.15);
+  border-top-color: $azure-primary;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: $azure-text-primary;
+  margin-bottom: 0.625rem;
+  letter-spacing: -0.01em;
+}
+
+.status-description {
+  font-size: 0.875rem;
+  color: $azure-text-secondary;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  max-width: 360px;
+}
+
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: #f3f2f1;
+  border: 1px solid $azure-border;
+  border-radius: 16px;
+  font-size: 0.8125rem;
+  color: $azure-text-primary;
+  margin-bottom: 1.5rem;
+}
+
+.error-banner {
+  width: 100%;
+  background: $azure-error-bg;
+  border: 1px solid rgba(209, 52, 56, 0.3);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-size: 0.84375rem;
+  color: $azure-error;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.resend-success-banner {
+  width: 100%;
+  background: $azure-success-bg;
+  border: 1px solid rgba(16, 124, 65, 0.3);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  color: $azure-success;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.close-info {
+  margin-top: 1.25rem;
+  padding: 1.25rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid $azure-border;
+  border-radius: 6px;
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+
+  .close-page-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $azure-text-primary;
+    margin-bottom: 0.35rem;
+  }
+
+  .countdown-text {
+    font-size: 0.84375rem;
+    color: $azure-text-secondary;
+  }
+}
+
+.action-buttons {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.btn-text {
+  background: transparent;
+  border: none;
+  color: $azure-primary;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: $azure-primary-hover;
+    text-decoration: underline;
+  }
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 120, 212, 0.3);
+  border-top-color: $azure-primary;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
