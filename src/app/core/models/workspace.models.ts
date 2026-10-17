@@ -53,6 +53,16 @@ export interface AddWorkspaceMemberRequest {
   readonly userId: string;
 }
 
+/** Workspace member returned by GET /api/v1/workspaces/{id}/members */
+export interface WorkspaceMemberResult {
+  readonly id: string;
+  readonly userId?: string;
+  readonly email: string;
+  readonly userName: string;
+  readonly fullName?: string | null;
+  readonly isOwner: boolean;
+}
+
 export const WORKSPACE_COLOR_PALETTE = [
   '#0078D4', // Azure Blue
   '#107C10', // Forest Green
