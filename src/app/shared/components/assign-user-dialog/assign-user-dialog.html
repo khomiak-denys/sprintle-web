@@ -1,0 +1,141 @@
+@if (isOpen) {
+  <div class="dialog-overlay dropdown-backdrop" (click)="onClose()"></div>
+  <div
+    class="azure-dialog azure-dropdown-panel"
+    role="dialog"
+    aria-labelledby="dialog-title"
+    aria-modal="true"
+    [style.top.px]="anchorPosition ? anchorPosition.top : null"
+    [style.left.px]="anchorPosition ? anchorPosition.left : null"
+  >
+    <div class="dialog-header dropdown-header">
+      <div class="dialog-header-info">
+        <h3 id="dialog-title" class="dialog-title">{{ title }}</h3>
+      </div>
+      <button
+        type="button"
+        class="dialog-close-btn"
+        (click)="onClose()"
+        aria-label="Close dialog"
+        id="btn-close-assign-dialog"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="dialog-body dropdown-body">
+      <div class="search-box assign-search-box">
+        <svg
+          class="search-icon"
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="text"
+          class="search-input"
+          [placeholder]="searchPlaceholder"
+          [value]="searchTerm"
+          (input)="onSearchInput($any($event.target).value)"
+          (keydown.enter)="onSearchEnter()"
+          id="input-assign-search"
+        />
+        @if (searchTerm) {
+          <button
+            type="button"
+            class="clear-search-btn"
+            (click)="onClearSearch()"
+            aria-label="Clear search"
+            id="btn-clear-assign-search"
+          >
+            ✕
+          </button>
+        }
+      </div>
+
+      @if (isLoading) {
+        <div class="loading-state">
+          <span class="spinner"></span>
+          <span>{{ loadingText }}</span>
+        </div>
+      } @else {
+        <div class="user-list">
+          @for (user of users; track user.id) {
+            <div
+              class="user-item"
+              role="button"
+              tabindex="0"
+              (click)="onSelect(user)"
+              (keydown.enter)="onSelect(user)"
+              (keydown.space)="$event.preventDefault(); onSelect(user)"
+              [id]="'btn-assign-user-' + user.id"
+            >
+              <span class="user-avatar">{{ getUserInitial(user) }}</span>
+              <div class="user-info">
+                <div class="user-title-row">
+                  <span class="user-name">{{ user.fullName || user.userName }}</span>
+                  @if (isOwner(user)) {
+                    <span class="owner-pill">Owner</span>
+                  }
+                </div>
+                <span class="user-email">{{ user.email }}</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-users">
+              @if (searchTerm) {
+                No members found matching "{{ searchTerm }}".
+              } @else {
+                {{ emptyText }}
+              }
+            </div>
+          }
+        </div>
+
+        @if (totalCount > pageSize) {
+          <div class="pagination-footer">
+            <span class="pagination-info">
+              Page {{ page }} of {{ totalPages }} ({{ totalCount }} total)
+            </span>
+            <div class="pagination-btns">
+              <button
+                type="button"
+                class="pagination-btn"
+                [disabled]="page <= 1 || isLoading"
+                (click)="onPageChange(page - 1)"
+                id="btn-assign-prev-page"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                class="pagination-btn"
+                [disabled]="page >= totalPages || isLoading"
+                (click)="onPageChange(page + 1)"
+                id="btn-assign-next-page"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+}
