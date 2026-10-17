@@ -9,11 +9,12 @@ import {
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
   AddWorkspaceMemberRequest,
+  WorkspaceMemberResult,
   mapWorkspaceResultToWorkspace,
   generateWorkspaceCode,
   getDeterministicColor,
 } from '../models/workspace.models';
-import { PaginationResult } from '../models/task.models';
+import { PaginationResult, UserResult } from '../models/task.models';
 import { AuthService } from './auth.service';
 
 const STORAGE_SELECTED_WS_KEY = 'selected_workspace_id';
@@ -101,6 +102,44 @@ export class WorkspaceService {
   /** DELETE /api/v1/workspaces/{id} */
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`, {
+      withCredentials: true,
+    });
+  }
+
+  /** GET /api/v1/workspaces/{id}/members */
+  getMembers(
+    id: string,
+    search?: string,
+    page: number = 1,
+    pageSize: number = 3,
+  ): Observable<PaginationResult<WorkspaceMemberResult>> {
+    let params = new HttpParams().set('page', page.toString()).set('pageSize', pageSize.toString());
+
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+
+    return this.http.get<PaginationResult<WorkspaceMemberResult>>(`${this.apiUrl}/${id}/members`, {
+      params,
+      withCredentials: true,
+    });
+  }
+
+  /** GET /api/v1/workspaces/{id}/members/potential */
+  getPotentialMembers(
+    id: string,
+    search?: string,
+    page: number = 1,
+    pageSize: number = 10,
+  ): Observable<PaginationResult<UserResult>> {
+    let params = new HttpParams().set('page', page.toString()).set('pageSize', pageSize.toString());
+
+    if (search && search.trim()) {
+      params = params.set('search', search.trim());
+    }
+
+    return this.http.get<PaginationResult<UserResult>>(`${this.apiUrl}/${id}/members/potential`, {
+      params,
       withCredentials: true,
     });
   }

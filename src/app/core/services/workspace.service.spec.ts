@@ -10,8 +10,9 @@ import {
   CreateWorkspaceRequest,
   UpdateWorkspaceRequest,
   AddWorkspaceMemberRequest,
+  WorkspaceMemberResult,
 } from '../models/workspace.models';
-import { PaginationResult } from '../models/task.models';
+import { PaginationResult, UserResult } from '../models/task.models';
 import { environment } from '../../../environments/environment';
 
 describe('WorkspaceService', () => {
@@ -198,6 +199,66 @@ describe('WorkspaceService', () => {
     expect(req.request.method).toBe('DELETE');
     expect(req.request.withCredentials).toBeTrue();
     req.flush(null);
+  });
+
+  it('getMembers_Should_SendGetRequestToMembersEndpoint_When_Called', (done) => {
+    const mockPagedResult: PaginationResult<WorkspaceMemberResult> = {
+      items: [
+        {
+          id: 'usr-1',
+          userId: 'usr-1',
+          email: 'user1@example.com',
+          userName: 'user1',
+          fullName: 'User One',
+          isOwner: true,
+        },
+      ],
+      page: 1,
+      pageSize: 3,
+      totalCount: 1,
+    };
+
+    service.getMembers('11111111-1111-1111-1111-111111111111', 'user1', 1, 3).subscribe((res) => {
+      expect(res).toEqual(mockPagedResult);
+      done();
+    });
+
+    const req = httpTesting.expectOne(
+      `${baseUrl}/11111111-1111-1111-1111-111111111111/members?page=1&pageSize=3&search=user1`,
+    );
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(mockPagedResult);
+  });
+
+  it('getPotentialMembers_Should_SendGetRequestToPotentialMembersEndpoint_When_Called', (done) => {
+    const mockPagedResult: PaginationResult<UserResult> = {
+      items: [
+        {
+          id: 'usr-9',
+          email: 'potential@example.com',
+          userName: 'potential_user',
+          fullName: 'Potential User',
+        },
+      ],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    };
+
+    service
+      .getPotentialMembers('11111111-1111-1111-1111-111111111111', 'potential', 1, 10)
+      .subscribe((res) => {
+        expect(res).toEqual(mockPagedResult);
+        done();
+      });
+
+    const req = httpTesting.expectOne(
+      `${baseUrl}/11111111-1111-1111-1111-111111111111/members/potential?page=1&pageSize=10&search=potential`,
+    );
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(mockPagedResult);
   });
 
   it('addMember_Should_SendPostRequestToMembersEndpoint_When_Called', (done) => {
