@@ -16,7 +16,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { BehaviorSubject, Observable, catchError, combineLatest, map, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, combineLatest, map, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -30,13 +31,24 @@ import {
   MyTasksFilterType,
   CreateTaskRequest,
   LogTimeRequest,
+  UserResult,
+  TaskComment,
 } from '../../core/models/task.models';
-import { Workspace } from '../../core/models/workspace.models';
+import {
+  Workspace,
+  WorkspaceMemberResult,
+  generateWorkspaceCode,
+} from '../../core/models/workspace.models';
 import { TaskDetailsComponent } from './task-details/task-details.component';
+import {
+  AssignUserDialogComponent,
+  AssignableMember,
+  DropdownPosition,
+} from '../../shared/components/assign-user-dialog/assign-user-dialog';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { TooltipComponent } from '../../shared/components/tooltip/tooltip.component';
 
-export type DashboardTab = 'board' | 'list' | 'statistics';
+export type DashboardTab = 'board' | 'list' | 'statistics' | 'settings';
 
 export interface StatisticsSummary {
   readonly total: number;
@@ -86,11 +98,45 @@ export interface DashboardState {
   readonly tasks: TaskResult[];
   readonly selectedTask: TaskDetailsResult | null;
   readonly isBladeOpen: boolean;
+  readonly comments: TaskComment[];
+  readonly commentsLoading: boolean;
+  readonly currentUser: UserResult | null;
   readonly isCreateModalOpen: boolean;
   readonly isLogTimeModalOpen: boolean;
+  readonly isAssignUserDialogOpen: boolean;
+  readonly assignDropdownPosition: DropdownPosition | null;
+  readonly taskToAssign: TaskResult | TaskDetailsResult | null;
+  readonly assignableUsers: WorkspaceMemberResult[];
+  readonly isAssignUsersLoading: boolean;
+  readonly assignUserSearch: string;
+  readonly assignUserPage: number;
+  readonly assignUserPageSize: number;
+  readonly assignUserTotalCount: number;
+  readonly isAddMemberDialogOpen: boolean;
+  readonly addMemberDropdownPosition: DropdownPosition | null;
+  readonly potentialMembers: UserResult[];
+  readonly isPotentialMembersLoading: boolean;
+  readonly potentialMembersSearch: string;
+  readonly potentialMembersPage: number;
+  readonly potentialMembersPageSize: number;
+  readonly potentialMembersTotalCount: number;
   readonly taskForTimeLog: TaskResult | null;
   readonly workspaces: Workspace[];
   readonly selectedWorkspace: Workspace | null;
+  readonly savingSettings: boolean;
+  readonly settingsMembers: WorkspaceMemberResult[];
+  readonly settingsMembersLoading: boolean;
+  readonly settingsMembersSearch: string;
+  readonly settingsMembersPage: number;
+  readonly settingsMembersPageSize: number;
+  readonly settingsMembersTotalCount: number;
+  readonly expandedSettingsSections: { general: boolean; members: boolean };
+
+  // Remove Member Confirmation
+  readonly isRemoveMemberModalOpen: boolean;
+  readonly memberToRemove: WorkspaceMemberResult | null;
+  readonly removeMemberConfirmInput: string;
+  readonly isRemovingMember: boolean;
 }
 
 export interface KpiSummary {
@@ -112,6 +158,7 @@ export interface KpiSummary {
     DatePipe,
     RouterLink,
     TaskDetailsComponent,
+    AssignUserDialogComponent,
     SkeletonComponent,
     TooltipComponent,
   ],
@@ -138,11 +185,43 @@ export class DashboardComponent implements OnInit {
     tasks: [],
     selectedTask: null,
     isBladeOpen: false,
+    comments: [],
+    commentsLoading: false,
+    currentUser: null,
     isCreateModalOpen: false,
     isLogTimeModalOpen: false,
+    isAssignUserDialogOpen: false,
+    assignDropdownPosition: null,
+    taskToAssign: null,
+    assignableUsers: [],
+    isAssignUsersLoading: false,
+    assignUserSearch: '',
+    assignUserPage: 1,
+    assignUserPageSize: 3,
+    assignUserTotalCount: 0,
+    isAddMemberDialogOpen: false,
+    addMemberDropdownPosition: null,
+    potentialMembers: [],
+    isPotentialMembersLoading: false,
+    potentialMembersSearch: '',
+    potentialMembersPage: 1,
+    potentialMembersPageSize: 10,
+    potentialMembersTotalCount: 0,
     taskForTimeLog: null,
     workspaces: [],
     selectedWorkspace: null,
+    savingSettings: false,
+    settingsMembers: [],
+    settingsMembersLoading: false,
+    settingsMembersSearch: '',
+    settingsMembersPage: 1,
+    settingsMembersPageSize: 5,
+    settingsMembersTotalCount: 0,
+    expandedSettingsSections: { general: true, members: true },
+    isRemoveMemberModalOpen: false,
+    memberToRemove: null,
+    removeMemberConfirmInput: '',
+    isRemovingMember: false,
   });
 
   readonly state$: Observable<DashboardState> = this.stateSubject.asObservable();
@@ -223,6 +302,30 @@ export class DashboardComponent implements OnInit {
 
   protected readonly createTaskForm: FormGroup;
   protected readonly logTimeForm: FormGroup;
+  protected readonly workspaceSettingsForm: FormGroup;
+  private readonly settingsMembersSearchSubject = new Subject<string>();
+
+  get totalSettingsMemberPages(): number {
+    const total = this.snapshot.settingsMembersTotalCount;
+    const size = this.snapshot.settingsMembersPageSize;
+    return Math.max(1, Math.ceil(total / size));
+  }
+
+  get canManageWorkspaceMembers(): boolean {
+    if (this.authService.isAdmin()) return true;
+    const ws = this.snapshot.selectedWorkspace;
+    if (!ws) return false;
+    if (ws.role === 'Owner' || ws.role === 'Admin') return true;
+    const currentUserId = this.authService.currentUserId();
+    if (currentUserId && ws.ownerId && ws.ownerId.toLowerCase() === currentUserId.toLowerCase()) {
+      return true;
+    }
+    return !ws.role;
+  }
+
+  get isRemoveMemberConfirmed(): boolean {
+    return this.isRemoveMemberButtonEnabled();
+  }
 
   private readonly destroyRef = inject(DestroyRef);
 
@@ -240,6 +343,7 @@ export class DashboardComponent implements OnInit {
       priority: ['Medium' as Priority, [Validators.required]],
       deadline: [''],
       tags: [''],
+      assigneeId: [null as string | null],
     });
 
     this.logTimeForm = this.fb.group({
@@ -247,17 +351,44 @@ export class DashboardComponent implements OnInit {
       description: [''],
       loggedDate: [new Date().toISOString().substring(0, 10), [Validators.required]],
     });
+
+    this.workspaceSettingsForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      description: ['', [Validators.maxLength(500)]],
+    });
   }
 
   ngOnInit(): void {
-    this.updateState({ userInitial: this.calculateUserInitial() });
+    this.updateState({
+      userInitial: this.calculateUserInitial(),
+      currentUser: this.buildCurrentUser(),
+    });
+
+    this.settingsMembersSearchSubject
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
+      .subscribe((query) => {
+        this.updateState({ settingsMembersSearch: query, settingsMembersPage: 1 });
+        this.loadSettingsMembers();
+      });
 
     this.workspaceService.selectedWorkspace$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((ws) => {
-        this.updateState({ selectedWorkspace: ws, page: 1 });
+        const isWorkspaceSwitched = this.snapshot.selectedWorkspace?.id !== ws?.id;
+        this.updateState({ selectedWorkspace: ws, ...(isWorkspaceSwitched ? { page: 1 } : {}) });
+        if (ws) {
+          this.workspaceSettingsForm.patchValue({
+            name: ws.name,
+            description: ws.description || '',
+          });
+          if (isWorkspaceSwitched && this.snapshot.activeTab === 'settings') {
+            this.loadSettingsMembers(ws.id);
+          }
+        }
         if (ws?.id) {
-          this.loadTasks();
+          if (isWorkspaceSwitched) {
+            this.loadTasks();
+          }
         } else {
           this.updateState({ loading: false, tasks: [], totalCount: 0 });
         }
@@ -340,6 +471,16 @@ export class DashboardComponent implements OnInit {
       layoutMode: tab === 'list' ? 'list' : 'board',
       ...(isEnteringBoard ? { viewMode: 'all-tasks' } : {}),
     });
+    if (tab === 'settings') {
+      const ws = this.snapshot.selectedWorkspace;
+      if (ws) {
+        this.workspaceSettingsForm.patchValue({
+          name: ws.name,
+          description: ws.description || '',
+        });
+      }
+      this.loadSettingsMembers();
+    }
     if (shouldReload) {
       this.loadTasks();
     }
@@ -397,31 +538,287 @@ export class DashboardComponent implements OnInit {
       )
       .subscribe((details) => {
         if (details) {
-          this.updateState({ selectedTask: details, isBladeOpen: true });
+          this.updateState({
+            selectedTask: details,
+            isBladeOpen: true,
+            comments: [],
+            commentsLoading: true,
+          });
+          this.loadComments(details.id);
         }
       });
   }
 
+  protected loadComments(taskId: string, page: number = 1): void {
+    this.updateState({ commentsLoading: true });
+    this.taskService
+      .getComments(taskId, page, 50)
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to load comments.');
+          return of({ items: [], page: 1, pageSize: 50, totalCount: 0 });
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.updateState({ comments: res?.items ?? [], commentsLoading: false });
+      });
+  }
+
+  protected onAddComment(content: string): void {
+    const task = this.snapshot.selectedTask;
+    if (!task || !content.trim()) return;
+
+    this.taskService
+      .addComment(task.id, { content: content.trim() })
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to post comment.');
+          return of(null);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((commentId) => {
+        if (commentId !== null) {
+          this.loadComments(task.id);
+        }
+      });
+  }
+
+  protected onDeleteComment(commentId: string): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .deleteComment(task.id, commentId)
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to delete comment.');
+          this.loadComments(task.id);
+          return of(null);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.updateState({
+          comments: this.snapshot.comments.filter((c) => c.id !== commentId),
+        });
+      });
+  }
+
   protected closeBlade(): void {
-    this.updateState({ isBladeOpen: false, selectedTask: null });
+    this.updateState({
+      isBladeOpen: false,
+      selectedTask: null,
+      comments: [],
+      commentsLoading: false,
+    });
   }
 
-  protected onDetailsStatusChange(newStatus: TaskStatus): void {
-    if (this.snapshot.selectedTask) {
-      this.onChangeStatus(this.snapshot.selectedTask, newStatus);
+  private calculateAnchorPosition(event?: MouseEvent): DropdownPosition | null {
+    if (!event) return null;
+    const target = (event.currentTarget || event.target) as HTMLElement;
+    if (!target || typeof target.getBoundingClientRect !== 'function') return null;
+
+    const rect = target.getBoundingClientRect();
+    const dropdownWidth = 290;
+    const dropdownHeight = 320;
+
+    let top = rect.bottom + 6;
+    let left = rect.left;
+
+    if (left + dropdownWidth > window.innerWidth - 12) {
+      left = Math.max(12, window.innerWidth - dropdownWidth - 12);
     }
+
+    if (top + dropdownHeight > window.innerHeight - 12 && rect.top > dropdownHeight) {
+      top = rect.top - dropdownHeight - 6;
+    }
+
+    return { top: Math.round(top), left: Math.round(left) };
   }
 
-  protected openLogTimeForSelected(): void {
-    if (this.snapshot.selectedTask) {
-      this.openLogTimeModal(this.snapshot.selectedTask);
-    }
+  protected onDetailsAssign(event?: MouseEvent): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    const position = this.calculateAnchorPosition(event);
+    this.updateState({
+      isAssignUserDialogOpen: true,
+      assignDropdownPosition: position,
+      taskToAssign: task,
+      assignUserSearch: '',
+      assignUserPage: 1,
+      assignUserPageSize: 3,
+      assignUserTotalCount: 0,
+      isAssignUsersLoading: true,
+    });
+    this.loadAssignableMembers(1, '', task.workspaceId);
   }
 
-  protected onDetailsComplete(): void {
-    if (this.snapshot.selectedTask) {
-      this.onCompleteTask(this.snapshot.selectedTask);
+  protected onBoardAssign(task: TaskResult, event: MouseEvent): void {
+    event.stopPropagation();
+    const position = this.calculateAnchorPosition(event);
+    this.updateState({
+      isAssignUserDialogOpen: true,
+      assignDropdownPosition: position,
+      taskToAssign: task,
+      assignUserSearch: '',
+      assignUserPage: 1,
+      assignUserPageSize: 3,
+      assignUserTotalCount: 0,
+      isAssignUsersLoading: true,
+    });
+    this.loadAssignableMembers(1, '', task.workspaceId);
+  }
+
+  protected onCloseAssignUserDialog(): void {
+    this.updateState({
+      isAssignUserDialogOpen: false,
+      assignDropdownPosition: null,
+      taskToAssign: null,
+      assignUserSearch: '',
+      assignUserPage: 1,
+      assignUserTotalCount: 0,
+    });
+  }
+
+  protected onAssignUserSearchChange(searchTerm: string): void {
+    this.updateState({ assignUserSearch: searchTerm, assignUserPage: 1 });
+    this.loadAssignableMembers(1, searchTerm);
+  }
+
+  protected onAssignUserPageChange(page: number): void {
+    this.updateState({ assignUserPage: page });
+    this.loadAssignableMembers(page, this.snapshot.assignUserSearch);
+  }
+
+  protected loadAssignableMembers(
+    page: number = 1,
+    search: string = '',
+    explicitWorkspaceId?: string,
+  ): void {
+    const workspaceId =
+      explicitWorkspaceId ||
+      this.snapshot.taskToAssign?.workspaceId ||
+      (this.snapshot.isCreateModalOpen
+        ? this.snapshot.selectedWorkspace?.id || this.workspaceService.currentWorkspace?.id
+        : null) ||
+      this.snapshot.selectedTask?.workspaceId ||
+      this.snapshot.selectedWorkspace?.id ||
+      this.workspaceService.currentWorkspace?.id;
+
+    if (!workspaceId) {
+      this.updateState({
+        assignableUsers: [],
+        isAssignUsersLoading: false,
+        assignUserPage: 1,
+        assignUserTotalCount: 0,
+      });
+      return;
     }
+
+    const pageSize = this.snapshot.assignUserPageSize || 3;
+    this.updateState({ isAssignUsersLoading: true, assignUserPage: page });
+    this.workspaceService
+      .getMembers(workspaceId, search, page, pageSize)
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to load workspace members.');
+          return of({ items: [], page, pageSize, totalCount: 0 });
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.updateState({
+          assignableUsers: res.items,
+          assignUserPage: res.page,
+          assignUserTotalCount: res.totalCount,
+          isAssignUsersLoading: false,
+        });
+      });
+  }
+
+  protected onUserSelectedForAssignment(user: AssignableMember): void {
+    if (this.snapshot.isCreateModalOpen && !this.snapshot.taskToAssign) {
+      this.selectedCreateAssignee = user;
+      this.createTaskForm.patchValue({ assigneeId: user.id });
+      this.onCloseAssignUserDialog();
+      return;
+    }
+
+    const task = this.snapshot.taskToAssign || this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .assign(task.id, user.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success(
+            `Assigned to ${user.fullName || user.userName} and moved to In Progress.`,
+          );
+          this.onCloseAssignUserDialog();
+          this.refreshTaskDetails(task.id);
+        },
+        error: () => {
+          this.notificationService.error('Failed to assign task.');
+        },
+      });
+  }
+
+  protected onDetailsSubmitForReview(): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .submitForReview(task.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Task submitted for review.');
+          this.refreshTaskDetails(task.id);
+        },
+        error: () => {
+          this.notificationService.error('Failed to submit task for review.');
+        },
+      });
+  }
+
+  protected onDetailsApprove(): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .approve(task.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Task approved and completed.');
+          this.refreshTaskDetails(task.id);
+        },
+        error: () => {
+          this.notificationService.error('Failed to approve task.');
+        },
+      });
+  }
+
+  protected onDetailsClose(): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .close(task.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Task closed.');
+          this.refreshTaskDetails(task.id);
+        },
+        error: () => {
+          this.notificationService.error('Failed to close task.');
+        },
+      });
   }
 
   protected onDetailsCancel(): void {
@@ -430,8 +827,55 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  protected onDetailsChangePriority(priority: Priority): void {
+    const task = this.snapshot.selectedTask;
+    if (!task) return;
+
+    this.taskService
+      .changePriority(task.id, priority)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success(`Priority updated to ${priority}.`);
+          this.refreshTaskDetails(task.id);
+        },
+        error: () => {
+          this.notificationService.error('Failed to change priority.');
+        },
+      });
+  }
+
+  protected refreshTaskDetails(taskId: string): void {
+    this.taskService
+      .getById(taskId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((updatedDetails) => {
+        const updatedTasks = this.snapshot.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                status: updatedDetails.status,
+                assignee: updatedDetails.assignee,
+                priority: updatedDetails.priority,
+              }
+            : t,
+        );
+        this.updateState({
+          tasks: updatedTasks,
+          selectedTask: updatedDetails,
+        });
+      });
+  }
+
+  protected openLogTimeForSelected(): void {
+    if (this.snapshot.selectedTask) {
+      this.openLogTimeModal(this.snapshot.selectedTask);
+    }
+  }
+
   protected createdTags: string[] = [];
   protected tagInputText = '';
+  protected selectedCreateAssignee: AssignableMember | null = null;
 
   protected focusTagInput(inputEl: HTMLInputElement): void {
     inputEl.focus();
@@ -502,15 +946,48 @@ export class DashboardComponent implements OnInit {
     this.createTaskForm.get('tags')?.setValue(this.createdTags.join(', '));
   }
 
+  protected onOpenCreateAssigneeDialog(event: MouseEvent): void {
+    event.stopPropagation();
+    const position = this.calculateAnchorPosition(event);
+    const workspaceId =
+      this.snapshot.selectedWorkspace?.id || this.workspaceService.currentWorkspace?.id || '';
+
+    this.updateState({
+      isAssignUserDialogOpen: true,
+      assignDropdownPosition: position,
+      taskToAssign: null,
+      assignUserSearch: '',
+      assignUserPage: 1,
+      assignUserPageSize: 3,
+      assignUserTotalCount: 0,
+      isAssignUsersLoading: true,
+    });
+    this.loadAssignableMembers(1, '', workspaceId);
+  }
+
+  protected onClearCreateAssignee(event?: MouseEvent): void {
+    event?.stopPropagation();
+    this.selectedCreateAssignee = null;
+    this.createTaskForm.patchValue({ assigneeId: null });
+  }
+
+  protected getMemberInitial(member: AssignableMember | null): string {
+    if (!member) return '?';
+    const name = member.fullName || member.userName || '?';
+    return name.trim().charAt(0).toUpperCase() || '?';
+  }
+
   protected openCreateModal(): void {
     this.createdTags = [];
     this.tagInputText = '';
+    this.selectedCreateAssignee = null;
     this.createTaskForm.reset({
       title: '',
       priority: 'Medium',
       deadline: '',
       description: '',
       tags: '',
+      assigneeId: null,
     });
     this.updateState({ isCreateModalOpen: true });
   }
@@ -518,6 +995,10 @@ export class DashboardComponent implements OnInit {
   protected closeCreateModal(): void {
     this.createdTags = [];
     this.tagInputText = '';
+    this.selectedCreateAssignee = null;
+    if (this.snapshot.isAssignUserDialogOpen && !this.snapshot.taskToAssign) {
+      this.onCloseAssignUserDialog();
+    }
     this.updateState({ isCreateModalOpen: false });
   }
 
@@ -555,6 +1036,7 @@ export class DashboardComponent implements OnInit {
       description: val.description?.trim() || null,
       priority: val.priority,
       deadline: val.deadline ? new Date(val.deadline).toISOString() : null,
+      assigneeId: val.assigneeId || null,
       tags: tagsArray,
     };
 
@@ -573,24 +1055,6 @@ export class DashboardComponent implements OnInit {
           this.closeCreateModal();
           this.loadTasks();
         }
-      });
-  }
-
-  protected onChangeStatus(task: TaskResult, status: TaskStatus): void {
-    this.taskService
-      .changeStatus(task.id, { status })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          const updated = this.snapshot.tasks.map((t) => (t.id === task.id ? { ...t, status } : t));
-          const updatedSelected =
-            this.snapshot.selectedTask?.id === task.id
-              ? { ...this.snapshot.selectedTask, status }
-              : this.snapshot.selectedTask;
-          this.updateState({ tasks: updated, selectedTask: updatedSelected });
-          this.notificationService.success(`Status changed to ${status}.`);
-        },
-        error: () => {},
       });
   }
 
@@ -733,7 +1197,9 @@ export class DashboardComponent implements OnInit {
 
   @HostListener('document:keydown.escape')
   protected onEscape(): void {
-    if (this.snapshot.isCreateModalOpen) {
+    if (this.snapshot.isRemoveMemberModalOpen) {
+      this.closeRemoveMemberModal();
+    } else if (this.snapshot.isCreateModalOpen) {
       this.closeCreateModal();
     } else if (this.snapshot.isLogTimeModalOpen) {
       this.closeLogTimeModal();
@@ -786,6 +1252,323 @@ export class DashboardComponent implements OnInit {
     return username.trim().charAt(0).toUpperCase() || '?';
   }
 
+  protected loadSettingsMembers(workspaceId?: string): void {
+    const wsId =
+      workspaceId ||
+      this.snapshot.selectedWorkspace?.id ||
+      this.workspaceService.currentWorkspace?.id;
+    if (!wsId) return;
+
+    this.updateState({ settingsMembersLoading: true });
+    this.workspaceService
+      .getMembers(
+        wsId,
+        this.snapshot.settingsMembersSearch,
+        this.snapshot.settingsMembersPage,
+        this.snapshot.settingsMembersPageSize,
+      )
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to load workspace members.');
+          return of({ items: [], page: 1, pageSize: 5, totalCount: 0 });
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        const ownerId = this.snapshot.selectedWorkspace?.ownerId;
+        const items = (res?.items ?? []).map((m) => ({
+          ...m,
+          isOwner:
+            m.isOwner ?? (!!ownerId && (m.userId || m.id).toLowerCase() === ownerId.toLowerCase()),
+        }));
+        this.updateState({
+          settingsMembersLoading: false,
+          settingsMembers: items,
+          settingsMembersTotalCount: res?.totalCount ?? 0,
+        });
+      });
+  }
+
+  protected onSettingsMembersSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.settingsMembersSearchSubject.next(input.value);
+  }
+
+  protected onSettingsMembersPageChange(page: number): void {
+    this.updateState({ settingsMembersPage: page });
+    this.loadSettingsMembers();
+  }
+
+  protected onOpenAddMemberDialog(event?: MouseEvent): void {
+    const ws = this.snapshot.selectedWorkspace;
+    if (!ws?.id) return;
+
+    const position = this.calculateAnchorPosition(event);
+    this.updateState({
+      isAddMemberDialogOpen: true,
+      addMemberDropdownPosition: position,
+      potentialMembersSearch: '',
+      potentialMembersPage: 1,
+      potentialMembersPageSize: 10,
+      potentialMembersTotalCount: 0,
+      isPotentialMembersLoading: true,
+      potentialMembers: [],
+    });
+    this.loadPotentialMembers(1, '', ws.id);
+  }
+
+  protected onCloseAddMemberDialog(): void {
+    this.updateState({
+      isAddMemberDialogOpen: false,
+      addMemberDropdownPosition: null,
+      potentialMembersSearch: '',
+      potentialMembersPage: 1,
+      potentialMembersTotalCount: 0,
+      potentialMembers: [],
+      isPotentialMembersLoading: false,
+    });
+  }
+
+  protected onAddMemberSearchChange(searchTerm: string): void {
+    this.updateState({ potentialMembersSearch: searchTerm, potentialMembersPage: 1 });
+    this.loadPotentialMembers(1, searchTerm);
+  }
+
+  protected onAddMemberPageChange(page: number): void {
+    this.updateState({ potentialMembersPage: page });
+    this.loadPotentialMembers(page, this.snapshot.potentialMembersSearch);
+  }
+
+  protected loadPotentialMembers(
+    page: number = 1,
+    search: string = '',
+    explicitWorkspaceId?: string,
+  ): void {
+    const workspaceId =
+      explicitWorkspaceId ||
+      this.snapshot.selectedWorkspace?.id ||
+      this.workspaceService.currentWorkspace?.id;
+
+    if (!workspaceId) {
+      this.updateState({
+        potentialMembers: [],
+        isPotentialMembersLoading: false,
+        potentialMembersPage: 1,
+        potentialMembersTotalCount: 0,
+      });
+      return;
+    }
+
+    const pageSize = this.snapshot.potentialMembersPageSize || 10;
+    this.updateState({ isPotentialMembersLoading: true, potentialMembersPage: page });
+    this.workspaceService
+      .getPotentialMembers(workspaceId, search, page, pageSize)
+      .pipe(
+        catchError(() => {
+          this.notificationService.error('Failed to load potential members.');
+          return of({ items: [], page, pageSize, totalCount: 0 });
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.updateState({
+          potentialMembers: res.items,
+          potentialMembersPage: res.page,
+          potentialMembersTotalCount: res.totalCount,
+          isPotentialMembersLoading: false,
+        });
+      });
+  }
+
+  protected onAddMemberUserSelected(user: AssignableMember): void {
+    const ws = this.snapshot.selectedWorkspace;
+    if (!ws?.id) return;
+
+    this.workspaceService
+      .addMember(ws.id, { userId: user.id })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success(`Added ${user.fullName || user.userName} to workspace.`);
+          this.onCloseAddMemberDialog();
+          this.loadSettingsMembers(ws.id);
+          this.workspaceService
+            .loadWorkspaces()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+        },
+        error: (err) => {
+          const msg =
+            err?.error?.message || err?.error?.detail || 'Failed to add member to workspace.';
+          this.notificationService.error(msg);
+        },
+      });
+  }
+
+  protected isMemberOwner(member: WorkspaceMemberResult): boolean {
+    if (member.isOwner) return true;
+    const ownerId = this.snapshot.selectedWorkspace?.ownerId;
+    const memberId = member.userId || member.id;
+    return !!ownerId && !!memberId && ownerId.toLowerCase() === memberId.toLowerCase();
+  }
+
+  protected openRemoveMemberModal(member: WorkspaceMemberResult): void {
+    this.updateState({
+      isRemoveMemberModalOpen: true,
+      memberToRemove: member,
+      removeMemberConfirmInput: '',
+      isRemovingMember: false,
+    });
+  }
+
+  protected closeRemoveMemberModal(force: boolean = false): void {
+    if (!force && this.snapshot.isRemovingMember) return;
+    this.updateState({
+      isRemoveMemberModalOpen: false,
+      memberToRemove: null,
+      removeMemberConfirmInput: '',
+      isRemovingMember: false,
+    });
+  }
+
+  protected onRemoveMemberConfirmInputChange(value: string): void {
+    this.updateState({ removeMemberConfirmInput: value });
+  }
+
+  protected isRemoveMemberButtonEnabled(): boolean {
+    const target = this.snapshot.memberToRemove;
+    if (!target) return false;
+    return (
+      this.snapshot.removeMemberConfirmInput.trim() === target.userName.trim() &&
+      !this.snapshot.isRemovingMember
+    );
+  }
+
+  protected confirmRemoveMember(): void {
+    const member = this.snapshot.memberToRemove;
+    const ws = this.snapshot.selectedWorkspace;
+    if (!member || !ws?.id || !this.isRemoveMemberButtonEnabled()) return;
+
+    const memberUserId = member.userId || member.id;
+    this.updateState({ isRemovingMember: true });
+
+    this.workspaceService
+      .removeMember(ws.id, memberUserId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success(`Removed @${member.userName} from workspace.`);
+          if (this.snapshot.settingsMembers.length === 1 && this.snapshot.settingsMembersPage > 1) {
+            this.updateState({
+              settingsMembersPage: this.snapshot.settingsMembersPage - 1,
+            });
+          }
+          this.closeRemoveMemberModal(true);
+          this.loadSettingsMembers(ws.id);
+          this.workspaceService
+            .loadWorkspaces()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+        },
+        error: (err) => {
+          this.updateState({ isRemovingMember: false });
+          const msg =
+            err?.error?.message || err?.error?.detail || 'Failed to remove member from workspace.';
+          this.notificationService.error(msg);
+        },
+      });
+  }
+
+  protected isSettingsSectionExpanded(section: 'general' | 'members'): boolean {
+    return !!this.snapshot.expandedSettingsSections[section];
+  }
+
+  protected toggleSettingsSection(section: 'general' | 'members'): void {
+    const current = this.snapshot.expandedSettingsSections;
+    this.updateState({
+      expandedSettingsSections: {
+        ...current,
+        [section]: !current[section],
+      },
+    });
+  }
+
+  protected onSaveWorkspaceSettings(): void {
+    if (this.workspaceSettingsForm.invalid) {
+      this.workspaceSettingsForm.markAllAsTouched();
+      return;
+    }
+
+    const ws = this.snapshot.selectedWorkspace;
+    if (!ws?.id) {
+      this.notificationService.error('No active workspace selected.');
+      return;
+    }
+
+    const { name, description } = this.workspaceSettingsForm.value;
+    const trimmedName = (name || '').trim();
+    const trimmedDesc = description ? description.trim() : '';
+
+    this.updateState({ savingSettings: true });
+
+    this.workspaceService
+      .update(ws.id, {
+        name: trimmedName,
+        description: trimmedDesc ? trimmedDesc : null,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          const newCode = generateWorkspaceCode(trimmedName);
+          const updatedWs: Workspace = {
+            ...ws,
+            name: trimmedName,
+            description: trimmedDesc,
+            code: newCode,
+          };
+
+          this.workspaceService.updateWorkspace(ws.id, {
+            name: trimmedName,
+            description: trimmedDesc,
+            code: newCode,
+          });
+
+          this.updateState({
+            savingSettings: false,
+            selectedWorkspace: updatedWs,
+          });
+
+          this.workspaceSettingsForm.reset({
+            name: trimmedName,
+            description: trimmedDesc,
+          });
+
+          this.workspaceService
+            .loadWorkspaces()
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe();
+
+          this.notificationService.success('Workspace settings updated successfully.');
+        },
+        error: (err) => {
+          this.updateState({ savingSettings: false });
+          const msg =
+            err?.error?.message || err?.error?.detail || 'Failed to update workspace settings.';
+          this.notificationService.error(msg);
+        },
+      });
+  }
+
+  protected onDiscardWorkspaceSettings(): void {
+    const ws = this.snapshot.selectedWorkspace;
+    if (ws) {
+      this.workspaceSettingsForm.reset({
+        name: ws.name,
+        description: ws.description || '',
+      });
+    }
+  }
+
   private calculateUserInitial(): string {
     const user =
       typeof this.authService?.currentUser === 'function' ? this.authService.currentUser() : null;
@@ -798,6 +1581,18 @@ export class DashboardComponent implements OnInit {
       '';
     const trimmed = typeof name === 'string' ? name.trim() : '';
     return trimmed.charAt(0).toUpperCase() || '?';
+  }
+
+  private buildCurrentUser(): UserResult | null {
+    const jwt =
+      typeof this.authService?.currentUser === 'function' ? this.authService.currentUser() : null;
+    if (!jwt) return null;
+    return {
+      id: jwt.sub || '',
+      email: jwt.email || '',
+      userName: jwt.unique_name || jwt.name || jwt.email || '',
+      fullName: typeof jwt.name === 'string' ? jwt.name : null,
+    };
   }
 
   private updateState(partial: Partial<DashboardState>): void {

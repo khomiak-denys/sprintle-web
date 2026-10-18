@@ -61,8 +61,6 @@ export class TaskDetailsComponent {
   @Input() isAdmin = false;
 
   @Output() readonly closeBlade = new EventEmitter<void>();
-  @Output() readonly statusChange = new EventEmitter<TaskStatus>();
-  @Output() readonly complete = new EventEmitter<void>();
   @Output() readonly assign = new EventEmitter<MouseEvent | undefined>();
   @Output() readonly submitForReview = new EventEmitter<void>();
   @Output() readonly approve = new EventEmitter<void>();

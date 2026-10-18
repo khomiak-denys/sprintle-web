@@ -9,7 +9,7 @@ import { NotificationService } from '../../core/services/notification.service';
 import { TaskService } from '../../core/services/task.service';
 import { TaskResult, TaskDetailsResult } from '../../core/models/task.models';
 import { WorkspaceService } from '../../core/services/workspace.service';
-import { Workspace } from '../../core/models/workspace.models';
+import { Workspace, WorkspaceMemberResult } from '../../core/models/workspace.models';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -18,6 +18,7 @@ describe('DashboardComponent', () => {
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
   let routerSpy: jasmine.SpyObj<Router>;
   let taskServiceSpy: jasmine.SpyObj<TaskService>;
+  let workspaceService: WorkspaceService;
   const mockWorkspace: Workspace = {
     id: 'ws-arch-core',
     name: 'Architecture Lab Core',
@@ -90,8 +91,14 @@ describe('DashboardComponent', () => {
 
   beforeEach(async () => {
     localStorage.clear();
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser', 'logout', 'isAdmin']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', [
+      'currentUser',
+      'logout',
+      'isAdmin',
+      'currentUserId',
+    ]);
     authServiceSpy.isAdmin.and.returnValue(false);
+    authServiceSpy.currentUserId.and.returnValue('user-123');
     authServiceSpy.currentUser.and.returnValue({
       sub: 'user-123',
       email: 'test@example.com',
@@ -115,10 +122,16 @@ describe('DashboardComponent', () => {
       'create',
       'update',
       'assign',
-      'changeStatus',
+      'submitForReview',
+      'approve',
+      'close',
       'logTime',
       'complete',
       'cancel',
+      'getComments',
+      'addComment',
+      'deleteComment',
+      'changePriority',
     ]);
 
     taskServiceSpy.getMy.and.returnValue(
@@ -129,10 +142,19 @@ describe('DashboardComponent', () => {
     );
     taskServiceSpy.getById.and.returnValue(of(mockDetails));
     taskServiceSpy.create.and.returnValue(of('new-task-id'));
-    taskServiceSpy.changeStatus.and.returnValue(of(void 0));
+    taskServiceSpy.assign.and.returnValue(of(void 0));
+    taskServiceSpy.changePriority.and.returnValue(of(void 0));
+    taskServiceSpy.submitForReview.and.returnValue(of(void 0));
+    taskServiceSpy.approve.and.returnValue(of(void 0));
+    taskServiceSpy.close.and.returnValue(of(void 0));
     taskServiceSpy.complete.and.returnValue(of(void 0));
     taskServiceSpy.cancel.and.returnValue(of(void 0));
     taskServiceSpy.logTime.and.returnValue(of(void 0));
+    taskServiceSpy.getComments.and.returnValue(
+      of({ items: [], page: 1, pageSize: 50, totalCount: 0 }),
+    );
+    taskServiceSpy.addComment.and.returnValue(of('new-comment-id'));
+    taskServiceSpy.deleteComment.and.returnValue(of(void 0));
 
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
@@ -151,8 +173,18 @@ describe('DashboardComponent', () => {
     routerSpy = router as unknown as jasmine.SpyObj<Router>;
 
     const wsService = TestBed.inject(WorkspaceService);
+    workspaceService = wsService;
     wsService.selectWorkspace(mockWorkspace);
     spyOn(wsService, 'loadWorkspaces').and.returnValue(of([mockWorkspace]));
+    spyOn(wsService, 'getMembers').and.returnValue(
+      of({ items: [], page: 1, pageSize: 50, totalCount: 0 }),
+    );
+    spyOn(wsService, 'getPotentialMembers').and.returnValue(
+      of({ items: [], page: 1, pageSize: 10, totalCount: 0 }),
+    );
+    spyOn(wsService, 'addMember').and.returnValue(of(void 0));
+    spyOn(wsService, 'removeMember').and.returnValue(of(void 0));
+    spyOn(wsService, 'update').and.returnValue(of(void 0));
 
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
@@ -302,6 +334,7 @@ describe('DashboardComponent', () => {
       priority: 'High',
       deadline: '2026-10-15',
       tags: 'Test, Backend',
+      assigneeId: null,
     });
 
     component['onCreateTaskSubmit']();
@@ -324,6 +357,7 @@ describe('DashboardComponent', () => {
       priority: 'Low',
       deadline: '',
       tags: '',
+      assigneeId: null,
     });
 
     component['onCreateTaskSubmit']();
@@ -418,13 +452,294 @@ describe('DashboardComponent', () => {
     expect(createCallArg.tags).toContain('Database');
   });
 
-  it('onChangeStatus_Should_CallTaskServiceAndNotify_When_Called', () => {
-    component['onChangeStatus'](mockTasks[0], 'Done');
+  it('onOpenCreateAssigneeDialog_Should_OpenDialogAndComputeAnchorPosition_When_TriggerClicked', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    component['openCreateModal']();
+    const mockEvent = {
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+      currentTarget: {
+        getBoundingClientRect: () => ({
+          top: 200,
+          bottom: 232,
+          left: 150,
+          right: 300,
+          width: 150,
+          height: 32,
+        }),
+      },
+    } as unknown as MouseEvent;
 
-    expect(taskServiceSpy.changeStatus).toHaveBeenCalledWith('task-1', { status: 'Done' });
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Status changed to Done.');
-    const updated = component.snapshot.tasks.find((t) => t.id === 'task-1');
-    expect(updated?.status).toBe('Done');
+    component['onOpenCreateAssigneeDialog'](mockEvent);
+
+    expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    expect(component.snapshot.isAssignUserDialogOpen).toBeTrue();
+    expect(component.snapshot.taskToAssign).toBeNull();
+    expect(component.snapshot.assignDropdownPosition).toEqual({ top: 238, left: 150 });
+    expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 3);
+  });
+
+  it('onClearCreateAssignee_Should_ResetAssigneeAndFormValue_When_Invoked', () => {
+    component['openCreateModal']();
+    component['selectedCreateAssignee'] = {
+      id: 'member-10',
+      userName: 'john_doe',
+      fullName: 'John Doe',
+      email: 'john@test.com',
+    };
+    component['createTaskForm'].patchValue({ assigneeId: 'member-10' });
+
+    const mockEvent = {
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+    } as unknown as MouseEvent;
+    component['onClearCreateAssignee'](mockEvent);
+
+    expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    expect(component['selectedCreateAssignee']).toBeNull();
+    expect(component['createTaskForm'].get('assigneeId')?.value).toBeNull();
+  });
+
+  it('onUserSelectedForAssignment_Should_SetCreateAssigneeAndCloseDialog_When_CreateModalOpenAndNoTaskToAssign', () => {
+    component['openCreateModal']();
+    component['updateState']({ isAssignUserDialogOpen: true, taskToAssign: null });
+
+    const member = {
+      id: 'member-55',
+      userName: 'sarah_connor',
+      fullName: 'Sarah Connor',
+      email: 'sarah@test.com',
+    };
+
+    component['onUserSelectedForAssignment'](member);
+
+    expect(component['selectedCreateAssignee']).toEqual(member);
+    expect(component['createTaskForm'].get('assigneeId')?.value).toBe('member-55');
+    expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
+    expect(taskServiceSpy.assign).not.toHaveBeenCalled();
+  });
+
+  it('onCreateTaskSubmit_Should_IncludeAssigneeIdInRequest_When_AssigneeSelected', () => {
+    component['openCreateModal']();
+    component['selectedCreateAssignee'] = {
+      id: 'user-77',
+      userName: 'developer',
+      fullName: 'Lead Developer',
+      email: 'dev@test.com',
+    };
+    component['createTaskForm'].setValue({
+      title: 'Task with Assignee',
+      description: 'Check assignee is forwarded',
+      priority: 'High',
+      deadline: '2026-11-01',
+      tags: 'Assignment',
+      assigneeId: 'user-77',
+    });
+
+    component['onCreateTaskSubmit']();
+
+    expect(taskServiceSpy.create).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        workspaceId: 'ws-arch-core',
+        title: 'Task with Assignee',
+        assigneeId: 'user-77',
+      }),
+    );
+    expect(component['selectedCreateAssignee']).toBeNull();
+  });
+
+  it('openCreateModal_Should_ResetSelectedCreateAssigneeAndFormAssigneeId_When_Called', () => {
+    component['selectedCreateAssignee'] = {
+      id: 'user-99',
+      userName: 'old_assignee',
+      fullName: 'Old Assignee',
+      email: 'old@test.com',
+    };
+    component['createTaskForm'].patchValue({ assigneeId: 'user-99' });
+
+    component['openCreateModal']();
+
+    expect(component['selectedCreateAssignee']).toBeNull();
+    expect(component['createTaskForm'].get('assigneeId')?.value).toBeNull();
+  });
+
+  it('closeCreateModal_Should_ResetSelectedCreateAssigneeAndCloseAssignDialog_When_Called', () => {
+    component['openCreateModal']();
+    component['updateState']({ isAssignUserDialogOpen: true, taskToAssign: null });
+    component['selectedCreateAssignee'] = {
+      id: 'user-99',
+      userName: 'assignee',
+      fullName: 'Assignee',
+      email: 'a@test.com',
+    };
+
+    component['closeCreateModal']();
+
+    expect(component['selectedCreateAssignee']).toBeNull();
+    expect(component.snapshot.isCreateModalOpen).toBeFalse();
+    expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
+  });
+
+  it('getMemberInitial_Should_ReturnInitialOrQuestionMark_When_Invoked', () => {
+    expect(component['getMemberInitial'](null)).toBe('?');
+    expect(
+      component['getMemberInitial']({
+        id: '1',
+        userName: 'alice',
+        fullName: 'Alice Johnson',
+        email: 'a@a.com',
+      }),
+    ).toBe('A');
+    expect(
+      component['getMemberInitial']({ id: '2', userName: 'bob', fullName: null, email: 'b@b.com' }),
+    ).toBe('B');
+    expect(
+      component['getMemberInitial']({ id: '3', userName: '', fullName: null, email: 'c@c.com' }),
+    ).toBe('?');
+  });
+
+  it('onDetailsAssign_Should_OpenAssignUserDialogAndFetchMembers_When_Invoked', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    component['updateState']({
+      selectedTask: {
+        id: 'task-1',
+        workspaceId: 'ws-arch-core',
+        title: 'Task 1',
+        status: 'Todo',
+        priority: 'High',
+      } as any,
+    });
+    component['onDetailsAssign']();
+
+    expect(component.snapshot.isAssignUserDialogOpen).toBeTrue();
+    expect(component.snapshot.assignUserSearch).toBe('');
+    expect(component.snapshot.assignUserPage).toBe(1);
+    expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 3);
+  });
+
+  it('onDetailsAssign_Should_ComputeAnchorPosition_When_EventPassed', () => {
+    component['updateState']({
+      selectedTask: {
+        id: 'task-1',
+        workspaceId: 'ws-arch-core',
+        title: 'Task 1',
+        status: 'Todo',
+        priority: 'High',
+      } as any,
+    });
+    const mockEvent = {
+      currentTarget: {
+        getBoundingClientRect: () => ({
+          top: 50,
+          bottom: 80,
+          left: 400,
+          right: 480,
+          width: 80,
+          height: 30,
+        }),
+      },
+    } as unknown as MouseEvent;
+
+    component['onDetailsAssign'](mockEvent);
+
+    expect(component.snapshot.assignDropdownPosition).toEqual({ top: 86, left: 400 });
+  });
+
+  it('onBoardAssign_Should_OpenAssignUserDialogWithAnchorPosition_When_Invoked', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    const mockEvent = {
+      stopPropagation: jasmine.createSpy('stopPropagation'),
+      currentTarget: {
+        getBoundingClientRect: () => ({
+          top: 100,
+          bottom: 130,
+          left: 200,
+          right: 230,
+          width: 30,
+          height: 30,
+        }),
+      },
+    } as unknown as MouseEvent;
+
+    component['onBoardAssign'](mockTasks[0], mockEvent);
+
+    expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    expect(component.snapshot.isAssignUserDialogOpen).toBeTrue();
+    expect(component.snapshot.taskToAssign).toEqual(mockTasks[0]);
+    expect(component.snapshot.assignDropdownPosition).toEqual({ top: 136, left: 200 });
+    expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 3);
+  });
+
+  it('onAssignUserSearchChange_Should_UpdateSearchTermAndFetchMembers_When_Invoked', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    component['onAssignUserSearchChange']('developer');
+
+    expect(component.snapshot.assignUserSearch).toBe('developer');
+    expect(component.snapshot.assignUserPage).toBe(1);
+    expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', 'developer', 1, 3);
+  });
+
+  it('onAssignUserPageChange_Should_UpdatePageAndFetchMembers_When_Invoked', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    (wsService.getMembers as jasmine.Spy).and.returnValue(
+      of({ items: [], page: 2, pageSize: 3, totalCount: 5 }),
+    );
+    component['updateState']({ assignUserSearch: 'developer' });
+    component['onAssignUserPageChange'](2);
+
+    expect(component.snapshot.assignUserPage).toBe(2);
+    expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', 'developer', 2, 3);
+  });
+
+  it('onCloseAssignUserDialog_Should_CloseDialogAndResetSearch_When_Invoked', () => {
+    component['updateState']({
+      isAssignUserDialogOpen: true,
+      assignUserSearch: 'abc',
+      assignUserPage: 2,
+      assignUserTotalCount: 5,
+    });
+    component['onCloseAssignUserDialog']();
+
+    expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
+    expect(component.snapshot.assignUserSearch).toBe('');
+    expect(component.snapshot.assignUserPage).toBe(1);
+    expect(component.snapshot.assignUserTotalCount).toBe(0);
+  });
+
+  it('loadAssignableMembers_Should_PopulateAssignableUsers_When_ServiceReturnsMembers', () => {
+    const wsService = TestBed.inject(WorkspaceService);
+    const mockMember = {
+      id: 'user-99',
+      userId: 'user-99',
+      userName: 'dev_user',
+      fullName: 'Dev User',
+      email: 'dev@test.com',
+      isOwner: false,
+    };
+    (wsService.getMembers as jasmine.Spy).and.returnValue(
+      of({ items: [mockMember], page: 1, pageSize: 3, totalCount: 1 }),
+    );
+
+    component['loadAssignableMembers'](1, 'dev');
+
+    expect(component.snapshot.assignableUsers).toEqual([mockMember]);
+    expect(component.snapshot.assignUserPage).toBe(1);
+    expect(component.snapshot.assignUserTotalCount).toBe(1);
+    expect(component.snapshot.isAssignUsersLoading).toBeFalse();
+  });
+
+  it('onUserSelectedForAssignment_Should_CallTaskServiceAssign_When_UserSelected', () => {
+    component['onSelectTask'](mockTasks[0]);
+    component['onUserSelectedForAssignment']({
+      id: 'user-2',
+      userName: 'alice',
+      fullName: 'Alice Smith',
+      email: 'alice@test.com',
+    });
+
+    expect(taskServiceSpy.assign).toHaveBeenCalledWith('task-1', 'user-2');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+      'Assigned to Alice Smith and moved to In Progress.',
+    );
+    expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
   });
 
   it('onCompleteTask_Should_CallTaskServiceComplete_When_Called', () => {
@@ -612,11 +927,12 @@ describe('DashboardComponent', () => {
     });
   });
 
-  it('onDetailsStatusChange_Should_CallChangeStatus_When_SelectedTaskPresent', () => {
+  it('onDetailsSubmitForReview_Should_CallTaskServiceSubmitForReview_When_SelectedTaskPresent', () => {
     component['onSelectTask'](mockTasks[0]);
-    component['onDetailsStatusChange']('Done');
+    component['onDetailsSubmitForReview']();
 
-    expect(taskServiceSpy.changeStatus).toHaveBeenCalledWith('task-1', { status: 'Done' });
+    expect(taskServiceSpy.submitForReview).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task submitted for review.');
   });
 
   it('openLogTimeForSelected_Should_OpenModal_When_SelectedTaskPresent', () => {
@@ -627,13 +943,20 @@ describe('DashboardComponent', () => {
     expect(component.snapshot.taskForTimeLog?.id).toBe('task-1');
   });
 
-  it('onDetailsComplete_Should_CompleteSelectedTask_When_Invoked', () => {
+  it('onDetailsApprove_Should_CallTaskServiceApprove_When_SelectedTaskPresent', () => {
     component['onSelectTask'](mockTasks[0]);
-    component['onDetailsComplete']();
+    component['onDetailsApprove']();
 
-    expect(taskServiceSpy.complete).toHaveBeenCalledWith('task-1');
-    expect(component.snapshot.isBladeOpen).toBeFalse();
-    expect(component.snapshot.selectedTask).toBeNull();
+    expect(taskServiceSpy.approve).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task approved and completed.');
+  });
+
+  it('onDetailsClose_Should_CallTaskServiceClose_When_SelectedTaskPresent', () => {
+    component['onSelectTask'](mockTasks[0]);
+    component['onDetailsClose']();
+
+    expect(taskServiceSpy.close).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task closed.');
   });
 
   it('onDetailsCancel_Should_CancelSelectedTask_When_Invoked', () => {
@@ -643,6 +966,14 @@ describe('DashboardComponent', () => {
     expect(taskServiceSpy.cancel).toHaveBeenCalledWith('task-1');
     expect(component.snapshot.isBladeOpen).toBeFalse();
     expect(component.snapshot.selectedTask).toBeNull();
+  });
+
+  it('onDetailsChangePriority_Should_CallTaskServiceChangePriority_When_SelectedTaskPresent', () => {
+    component['onSelectTask'](mockTasks[0]);
+    component['onDetailsChangePriority']('High');
+
+    expect(taskServiceSpy.changePriority).toHaveBeenCalledWith('task-1', 'High');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Priority updated to High.');
   });
 
   it('setActiveTab_Should_UpdateActiveTabAndLayoutMode_When_Invoked', () => {
@@ -656,9 +987,127 @@ describe('DashboardComponent', () => {
     component['setActiveTab']('statistics');
     expect(component.snapshot.activeTab).toBe('statistics');
 
+    component['setActiveTab']('settings');
+    expect(component.snapshot.activeTab).toBe('settings');
+
     component['setActiveTab']('board');
     expect(component.snapshot.activeTab).toBe('board');
     expect(component.snapshot.layoutMode).toBe('board');
+  });
+
+  it('setActiveTab_Should_PopulateFormAndLoadMembers_When_SettingsTabSelected', () => {
+    (workspaceService.getMembers as jasmine.Spy).calls.reset();
+    component['setActiveTab']('settings');
+
+    expect(component.snapshot.activeTab).toBe('settings');
+    expect(component['workspaceSettingsForm'].value).toEqual({
+      name: 'Architecture Lab Core',
+      description: 'Clean architecture microservices',
+    });
+    expect(workspaceService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 5);
+  });
+
+  it('SettingsTab_Should_RenderSettingsLayoutInDOM_When_ActiveTabIsSettings', () => {
+    component['setActiveTab']('settings');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const settingsBtn = compiled.querySelector('#tab-settings');
+    expect(settingsBtn).toBeTruthy();
+    expect(settingsBtn?.classList.contains('active')).toBeTrue();
+
+    const settingsContainer = compiled.querySelector('#workspace-settings-view');
+    expect(settingsContainer).toBeTruthy();
+
+    const nameInput = compiled.querySelector('#settings-workspace-name') as HTMLInputElement;
+    expect(nameInput).toBeTruthy();
+    expect(nameInput.value).toBe('Architecture Lab Core');
+
+    const descInput = compiled.querySelector(
+      '#settings-workspace-description',
+    ) as HTMLTextAreaElement;
+    expect(descInput).toBeTruthy();
+    expect(descInput.value).toBe('Clean architecture microservices');
+
+    const saveBtn = compiled.querySelector('#btn-save-workspace-settings');
+    expect(saveBtn).toBeTruthy();
+
+    const discardBtn = compiled.querySelector('#btn-discard-workspace-settings');
+    expect(discardBtn).toBeTruthy();
+  });
+
+  it('onSaveWorkspaceSettings_Should_CallUpdateServiceAndShowSuccess_When_FormIsValid', () => {
+    component['setActiveTab']('settings');
+    component['workspaceSettingsForm'].setValue({
+      name: 'Updated Workspace Name',
+      description: 'Updated Workspace Description',
+    });
+
+    component['onSaveWorkspaceSettings']();
+
+    expect(workspaceService.update).toHaveBeenCalledWith('ws-arch-core', {
+      name: 'Updated Workspace Name',
+      description: 'Updated Workspace Description',
+    });
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+      'Workspace settings updated successfully.',
+    );
+    expect(component.snapshot.savingSettings).toBeFalse();
+    expect(component.snapshot.selectedWorkspace?.name).toBe('Updated Workspace Name');
+    expect(component.snapshot.selectedWorkspace?.description).toBe('Updated Workspace Description');
+    expect(component.snapshot.selectedWorkspace?.code).toBe('UPDA');
+  });
+
+  it('onSaveWorkspaceSettings_Should_SetSavingFalseAndShowError_When_UpdateFails', () => {
+    (workspaceService.update as jasmine.Spy).and.returnValue(
+      throwError(() => ({ error: { message: 'Unauthorized modification' } })),
+    );
+
+    component['setActiveTab']('settings');
+    component['workspaceSettingsForm'].setValue({
+      name: 'Forbidden Update',
+      description: 'Forbidden Desc',
+    });
+
+    component['onSaveWorkspaceSettings']();
+
+    expect(component.snapshot.savingSettings).toBeFalse();
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Unauthorized modification');
+  });
+
+  it('onDiscardWorkspaceSettings_Should_ResetFormToOriginalValues_When_DiscardClicked', () => {
+    component['setActiveTab']('settings');
+    component['workspaceSettingsForm'].setValue({
+      name: 'Temporary Unsaved Name',
+      description: 'Temporary Unsaved Description',
+    });
+
+    component['onDiscardWorkspaceSettings']();
+
+    expect(component['workspaceSettingsForm'].value).toEqual({
+      name: 'Architecture Lab Core',
+      description: 'Clean architecture microservices',
+    });
+  });
+
+  it('toggleSettingsSection_Should_ToggleAccordionSections_When_Called', () => {
+    expect(component['isSettingsSectionExpanded']('general')).toBeTrue();
+    component['toggleSettingsSection']('general');
+    expect(component['isSettingsSectionExpanded']('general')).toBeFalse();
+    component['toggleSettingsSection']('general');
+    expect(component['isSettingsSectionExpanded']('general')).toBeTrue();
+
+    expect(component['isSettingsSectionExpanded']('members')).toBeTrue();
+    component['toggleSettingsSection']('members');
+    expect(component['isSettingsSectionExpanded']('members')).toBeFalse();
+  });
+
+  it('onSettingsMembersPageChange_Should_UpdatePageAndCallGetMembers_When_PageChanged', () => {
+    (workspaceService.getMembers as jasmine.Spy).calls.reset();
+    component['onSettingsMembersPageChange'](2);
+
+    expect(component.snapshot.settingsMembersPage).toBe(2);
+    expect(workspaceService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 2, 5);
   });
 
   it('resetFilters_Should_ResetAllFiltersToDefault_When_Invoked', () => {
@@ -808,6 +1257,326 @@ describe('DashboardComponent', () => {
       const tooltipEl = fixture.nativeElement.querySelector('app-tooltip');
       expect(tooltipEl).toBeTruthy();
       expect(avatarEl.getAttribute('aria-label')).toBe('Unassigned');
+    });
+  });
+
+  describe('Add Workspace Member Flow', () => {
+    it('canManageWorkspaceMembers_Should_ReturnTrueForOwnerAndAdmin_AndFalseForContributor', () => {
+      component['updateState']({
+        selectedWorkspace: mockWorkspace,
+      });
+      expect(component.canManageWorkspaceMembers).toBeTrue();
+
+      component['updateState']({
+        selectedWorkspace: { ...mockWorkspace, role: 'Contributor', ownerId: 'other-user' },
+      });
+      expect(component.canManageWorkspaceMembers).toBeFalse();
+
+      authServiceSpy.isAdmin.and.returnValue(true);
+      expect(component.canManageWorkspaceMembers).toBeTrue();
+    });
+
+    it('onOpenAddMemberDialog_Should_OpenDialogAndFetchPotentialMembers_When_Invoked', () => {
+      const mockEvent = {
+        currentTarget: {
+          getBoundingClientRect: () => ({ bottom: 100, left: 200, top: 70, right: 300 }),
+        },
+      } as unknown as MouseEvent;
+
+      component['onOpenAddMemberDialog'](mockEvent);
+
+      expect(component.snapshot.isAddMemberDialogOpen).toBeTrue();
+      expect(component.snapshot.potentialMembersSearch).toBe('');
+      expect(component.snapshot.potentialMembersPage).toBe(1);
+      expect(workspaceService.getPotentialMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 10);
+    });
+
+    it('onCloseAddMemberDialog_Should_CloseDialogAndResetState_When_Invoked', () => {
+      component['updateState']({
+        isAddMemberDialogOpen: true,
+        potentialMembersSearch: 'user',
+        potentialMembersPage: 3,
+        potentialMembersTotalCount: 15,
+      });
+
+      component['onCloseAddMemberDialog']();
+
+      expect(component.snapshot.isAddMemberDialogOpen).toBeFalse();
+      expect(component.snapshot.potentialMembersSearch).toBe('');
+      expect(component.snapshot.potentialMembersPage).toBe(1);
+      expect(component.snapshot.potentialMembersTotalCount).toBe(0);
+    });
+
+    it('onAddMemberSearchChange_Should_UpdateSearchAndTriggerPotentialMembersLoad', () => {
+      component['onAddMemberSearchChange']('carol');
+
+      expect(component.snapshot.potentialMembersSearch).toBe('carol');
+      expect(component.snapshot.potentialMembersPage).toBe(1);
+      expect(workspaceService.getPotentialMembers).toHaveBeenCalledWith(
+        'ws-arch-core',
+        'carol',
+        1,
+        10,
+      );
+    });
+
+    it('onAddMemberPageChange_Should_UpdatePageAndTriggerPotentialMembersLoad', () => {
+      (workspaceService.getPotentialMembers as jasmine.Spy).and.returnValue(
+        of({ items: [], page: 2, pageSize: 10, totalCount: 20 }),
+      );
+      component['updateState']({ potentialMembersSearch: 'dave' });
+      component['onAddMemberPageChange'](2);
+
+      expect(component.snapshot.potentialMembersPage).toBe(2);
+      expect(workspaceService.getPotentialMembers).toHaveBeenCalledWith(
+        'ws-arch-core',
+        'dave',
+        2,
+        10,
+      );
+    });
+
+    it('loadPotentialMembers_Should_PopulatePotentialMembers_When_ServiceReturnsData', () => {
+      const potentialUser = {
+        id: 'usr-potential-1',
+        email: 'carol@test.com',
+        userName: 'carol',
+        fullName: 'Carol Danvers',
+      };
+      (workspaceService.getPotentialMembers as jasmine.Spy).and.returnValue(
+        of({ items: [potentialUser], page: 1, pageSize: 10, totalCount: 1 }),
+      );
+
+      component['loadPotentialMembers'](1, 'carol');
+
+      expect(component.snapshot.potentialMembers).toEqual([potentialUser]);
+      expect(component.snapshot.potentialMembersTotalCount).toBe(1);
+      expect(component.snapshot.isPotentialMembersLoading).toBeFalse();
+    });
+
+    it('onAddMemberUserSelected_Should_CallAddMemberAndReloadMembers_When_UserSelected', () => {
+      const potentialUser = {
+        id: 'usr-potential-2',
+        email: 'dave@test.com',
+        userName: 'dave',
+        fullName: 'Dave Bowman',
+      };
+
+      component['onAddMemberUserSelected'](potentialUser);
+
+      expect(workspaceService.addMember).toHaveBeenCalledWith('ws-arch-core', {
+        userId: 'usr-potential-2',
+      });
+      expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+        'Added Dave Bowman to workspace.',
+      );
+      expect(component.snapshot.isAddMemberDialogOpen).toBeFalse();
+      expect(workspaceService.getMembers).toHaveBeenCalled();
+    });
+
+    it('DOM_Should_RenderAddMemberButton_When_UserCanManageMembers', () => {
+      component['updateState']({
+        activeTab: 'settings',
+        expandedSettingsSections: { general: true, members: true },
+      });
+      fixture.detectChanges();
+
+      const addBtn = fixture.nativeElement.querySelector(
+        '#btn-add-workspace-member',
+      ) as HTMLButtonElement;
+      expect(addBtn).toBeTruthy();
+      expect(addBtn.textContent).toContain('Add Member');
+    });
+  });
+
+  describe('Remove Member Confirmation Modal', () => {
+    const mockMember: WorkspaceMemberResult = {
+      id: 'member-123',
+      userId: 'usr-123',
+      email: 'bob@example.com',
+      userName: 'bob_builder',
+      fullName: 'Bob Builder',
+      isOwner: false,
+    };
+
+    it('openRemoveMemberModal_Should_SetMemberAndOpenModal_When_Invoked', () => {
+      component['openRemoveMemberModal'](mockMember);
+
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeTrue();
+      expect(component.snapshot.memberToRemove).toEqual(mockMember);
+      expect(component.snapshot.removeMemberConfirmInput).toBe('');
+      expect(component.snapshot.isRemovingMember).toBeFalse();
+    });
+
+    it('closeRemoveMemberModal_Should_ResetStateAndCloseModal_When_NotRemoving', () => {
+      component['openRemoveMemberModal'](mockMember);
+      component['onRemoveMemberConfirmInputChange']('bob_builder');
+
+      component['closeRemoveMemberModal']();
+
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeFalse();
+      expect(component.snapshot.memberToRemove).toBeNull();
+      expect(component.snapshot.removeMemberConfirmInput).toBe('');
+      expect(component.snapshot.isRemovingMember).toBeFalse();
+    });
+
+    it('closeRemoveMemberModal_Should_DoNothing_When_IsRemovingMemberIsTrue', () => {
+      component['openRemoveMemberModal'](mockMember);
+      component['updateState']({ isRemovingMember: true });
+
+      component['closeRemoveMemberModal']();
+
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeTrue();
+    });
+
+    it('onRemoveMemberConfirmInputChange_Should_UpdateConfirmInput_When_Typing', () => {
+      component['onRemoveMemberConfirmInputChange']('bob_builder');
+      expect(component.snapshot.removeMemberConfirmInput).toBe('bob_builder');
+    });
+
+    it('isRemoveMemberButtonEnabled_Should_ReturnTrueOnlyWhenExactUsernameSpellingMatches', () => {
+      component['openRemoveMemberModal'](mockMember);
+
+      // Empty input
+      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
+      expect(component.isRemoveMemberConfirmed).toBeFalse();
+
+      // Wrong spelling
+      component['onRemoveMemberConfirmInputChange']('bob');
+      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
+
+      // Correct spelling with extra whitespace around
+      component['onRemoveMemberConfirmInputChange']('  bob_builder  ');
+      expect(component['isRemoveMemberButtonEnabled']()).toBeTrue();
+      expect(component.isRemoveMemberConfirmed).toBeTrue();
+
+      // In-flight removal disables button
+      component['updateState']({ isRemovingMember: true });
+      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
+    });
+
+    it('confirmRemoveMember_Should_CallServiceAndNotifyAndReload_When_Valid', () => {
+      component['updateState']({
+        selectedWorkspace: mockWorkspace,
+        settingsMembers: [mockMember],
+        settingsMembersPage: 1,
+      });
+      component['openRemoveMemberModal'](mockMember);
+      component['onRemoveMemberConfirmInputChange']('bob_builder');
+
+      component['confirmRemoveMember']();
+
+      expect(workspaceService.removeMember).toHaveBeenCalledWith('ws-arch-core', 'usr-123');
+      expect(notificationServiceSpy.success).toHaveBeenCalledWith(
+        'Removed @bob_builder from workspace.',
+      );
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeFalse();
+      expect(workspaceService.getMembers).toHaveBeenCalled();
+      expect(workspaceService.loadWorkspaces).toHaveBeenCalled();
+    });
+
+    it('confirmRemoveMember_Should_AdjustPage_When_LastItemOnPageGreaterThanOneRemoved', () => {
+      component['updateState']({
+        selectedWorkspace: mockWorkspace,
+        settingsMembers: [mockMember],
+        settingsMembersPage: 2,
+      });
+      component['openRemoveMemberModal'](mockMember);
+      component['onRemoveMemberConfirmInputChange']('bob_builder');
+
+      component['confirmRemoveMember']();
+
+      expect(component.snapshot.settingsMembersPage).toBe(1);
+    });
+
+    it('confirmRemoveMember_Should_HandleError_When_ServiceFails', () => {
+      (workspaceService.removeMember as jasmine.Spy).and.returnValue(
+        throwError(() => ({ error: { message: 'Cannot remove owner.' } })),
+      );
+      component['updateState']({ selectedWorkspace: mockWorkspace });
+      component['openRemoveMemberModal'](mockMember);
+      component['onRemoveMemberConfirmInputChange']('bob_builder');
+
+      component['confirmRemoveMember']();
+
+      expect(notificationServiceSpy.error).toHaveBeenCalledWith('Cannot remove owner.');
+      expect(component.snapshot.isRemovingMember).toBeFalse();
+    });
+
+    it('onEscape_Should_CloseRemoveMemberModal_When_ModalIsOpen', () => {
+      component['openRemoveMemberModal'](mockMember);
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeTrue();
+
+      component['onEscape']();
+      expect(component.snapshot.isRemoveMemberModalOpen).toBeFalse();
+    });
+
+    it('DOM_Should_RenderRemoveButtonForNonOwner_And_EnforceConfirmationSpelling', () => {
+      const ownerMember: WorkspaceMemberResult = {
+        id: 'owner-id',
+        userId: 'owner-id',
+        email: 'owner@example.com',
+        userName: 'owner_user',
+        fullName: 'Owner User',
+        isOwner: true,
+      };
+      const regularMember: WorkspaceMemberResult = {
+        id: 'regular-id',
+        userId: 'regular-id',
+        email: 'reg@example.com',
+        userName: 'regular_user',
+        fullName: 'Regular User',
+        isOwner: false,
+      };
+
+      component['updateState']({
+        activeTab: 'settings',
+        expandedSettingsSections: { general: true, members: true },
+        settingsMembers: [ownerMember, regularMember],
+        settingsMembersTotalCount: 2,
+      });
+      fixture.detectChanges();
+
+      // Owner card should NOT have remove button
+      const ownerRemoveBtn = fixture.nativeElement.querySelector('#btn-remove-member-owner-id');
+      expect(ownerRemoveBtn).toBeNull();
+
+      // Regular member card should have remove button
+      const regRemoveBtn = fixture.nativeElement.querySelector(
+        '#btn-remove-member-regular-id',
+      ) as HTMLButtonElement;
+      expect(regRemoveBtn).toBeTruthy();
+
+      // Click remove button opens modal
+      regRemoveBtn.click();
+      fixture.detectChanges();
+
+      const modal = fixture.nativeElement.querySelector('#remove-member-modal');
+      expect(modal).toBeTruthy();
+
+      const confirmBtn = fixture.nativeElement.querySelector(
+        '#btn-confirm-remove-member',
+      ) as HTMLButtonElement;
+      expect(confirmBtn.disabled).toBeTrue();
+
+      // Type wrong username
+      const input = fixture.nativeElement.querySelector(
+        '#input-confirm-member-username',
+      ) as HTMLInputElement;
+      input.value = 'wrong_name';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(confirmBtn.disabled).toBeTrue();
+
+      // Type correct username
+      input.value = 'regular_user';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(confirmBtn.disabled).toBeFalse();
+
+      // Click confirm button
+      confirmBtn.click();
+      expect(workspaceService.removeMember).toHaveBeenCalledWith('ws-arch-core', 'regular-id');
     });
   });
 });
