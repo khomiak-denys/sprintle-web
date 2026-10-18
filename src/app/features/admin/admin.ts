@@ -530,25 +530,48 @@ export class AdminComponent implements OnInit {
     });
   }
 
-  onTaskStatusChange(newStatus: TaskStatus): void {
+  onTaskApprove(): void {
     const task = this.snapshot.selectedTaskDetails;
     if (!task) return;
 
     this.taskService
-      .changeStatus(task.id, { status: newStatus })
+      .approve(task.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.notificationService.success(`Status changed to ${newStatus}.`);
+          this.notificationService.success('Task approved and completed.');
           this.updateState({
-            selectedTaskDetails: { ...task, status: newStatus },
+            selectedTaskDetails: { ...task, status: 'Done' },
             tasks: this.snapshot.tasks.map((t) =>
-              t.id === task.id ? { ...t, status: newStatus } : t,
+              t.id === task.id ? { ...t, status: 'Done' } : t,
             ),
           });
         },
         error: () => {
-          this.notificationService.error('Failed to change status.');
+          this.notificationService.error('Failed to approve task.');
+        },
+      });
+  }
+
+  onTaskClose(): void {
+    const task = this.snapshot.selectedTaskDetails;
+    if (!task) return;
+
+    this.taskService
+      .close(task.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notificationService.success('Task closed.');
+          this.updateState({
+            selectedTaskDetails: { ...task, status: 'Closed' },
+            tasks: this.snapshot.tasks.map((t) =>
+              t.id === task.id ? { ...t, status: 'Closed' } : t,
+            ),
+          });
+        },
+        error: () => {
+          this.notificationService.error('Failed to close task.');
         },
       });
   }

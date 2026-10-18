@@ -9,10 +9,11 @@ import {
 } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import {
-  TaskComment,
   TaskDetailsResult,
+  TaskComment,
   TaskStatus,
   UserResult,
+  Priority,
 } from '../../../core/models/task.models';
 
 @Component({
@@ -29,6 +30,7 @@ export class TaskDetailsComponent {
   @Input()
   set task(value: TaskDetailsResult | null) {
     this._task = value;
+    this.isPriorityDropdownOpen = false;
     this.loadCommentsForTask(value);
     this.cdr.markForCheck();
   }
@@ -39,48 +41,119 @@ export class TaskDetailsComponent {
 
   @Input() isOpen = false;
 
+  @Input()
+  set comments(value: TaskComment[] | null | undefined) {
+    if (value !== undefined && value !== null) {
+      this._comments = [...value];
+      if (this._task) {
+        this.taskCommentsMap.set(this._task.id, this._comments);
+      }
+      this.cdr.markForCheck();
+    }
+  }
+  get comments(): TaskComment[] {
+    return this._comments;
+  }
+  private _comments: TaskComment[] = [];
+
+  @Input() commentsLoading = false;
+  @Input() currentUser: UserResult | null = null;
+  @Input() isAdmin = false;
+
   @Output() readonly closeBlade = new EventEmitter<void>();
   @Output() readonly statusChange = new EventEmitter<TaskStatus>();
-  @Output() readonly logTime = new EventEmitter<void>();
   @Output() readonly complete = new EventEmitter<void>();
+  @Output() readonly assign = new EventEmitter<MouseEvent | undefined>();
+  @Output() readonly submitForReview = new EventEmitter<void>();
+  @Output() readonly approve = new EventEmitter<void>();
+  @Output() readonly close = new EventEmitter<void>();
+  @Output() readonly logTime = new EventEmitter<void>();
   @Output() readonly cancel = new EventEmitter<void>();
+  @Output() readonly addComment = new EventEmitter<string>();
+  @Output() readonly deleteComment = new EventEmitter<string>();
+  @Output() readonly changePriority = new EventEmitter<Priority>();
 
-  protected comments: TaskComment[] = [];
+  protected isPriorityDropdownOpen = false;
+  protected readonly priorityLevels: Priority[] = ['Low', 'Medium', 'High', 'Critical'];
   protected newCommentText = '';
 
   private readonly taskCommentsMap = new Map<string, TaskComment[]>();
 
-  protected readonly currentUser: UserResult = {
+  protected readonly defaultCurrentUser: UserResult = {
     id: 'user-current',
     userName: 'denys_khomiak',
     fullName: 'Denys Khomiak',
     email: 'denys.khomiak@tasktracker.local',
   };
 
-  protected readonly statuses: { key: TaskStatus; label: string }[] = [
-    { key: 'Todo', label: 'To Do' },
-    { key: 'InProgress', label: 'In Progress' },
-    { key: 'InReview', label: 'In Review' },
-    { key: 'Done', label: 'Done' },
-    { key: 'Cancelled', label: 'Cancelled' },
-  ];
+  protected get effectiveCurrentUser(): UserResult {
+    return this.currentUser || this.defaultCurrentUser;
+  }
+
+  protected get canChangePriority(): boolean {
+    if (this.isAdmin) return true;
+    if (!this._task) return false;
+    const currentUserId = this.effectiveCurrentUser?.id;
+    if (!currentUserId) return false;
+    const creatorId = this._task.createdById || this._task.createdBy?.id;
+    return !!creatorId && creatorId.toLowerCase() === currentUserId.toLowerCase();
+  }
+
+  protected togglePriorityDropdown(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!this.canChangePriority) return;
+    this.isPriorityDropdownOpen = !this.isPriorityDropdownOpen;
+    this.cdr.markForCheck();
+  }
+
+  protected closePriorityDropdown(): void {
+    if (this.isPriorityDropdownOpen) {
+      this.isPriorityDropdownOpen = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  protected selectPriority(priority: Priority): void {
+    this.closePriorityDropdown();
+    if (this._task && this._task.priority !== priority) {
+      this.changePriority.emit(priority);
+    }
+  }
+
+  protected isTransitionAllowed(action: string): boolean {
+    const normalized = action.toLowerCase().replace(/[-_]/g, '');
+    return (
+      this._task?.availableTransitions?.some(
+        (t) => t.action.toString().toLowerCase().replace(/[-_]/g, '') === normalized && t.isAllowed,
+      ) ?? false
+    );
+  }
 
   protected onClose(): void {
+    this.isPriorityDropdownOpen = false;
     this.closeBlade.emit();
   }
 
-  protected onStatusChange(newStatus: TaskStatus): void {
-    if (this._task && this._task.status !== newStatus) {
-      this.statusChange.emit(newStatus);
-    }
+  protected onAssign(event?: MouseEvent): void {
+    this.assign.emit(event);
+  }
+
+  protected onSubmitForReview(): void {
+    this.submitForReview.emit();
+  }
+
+  protected onApprove(): void {
+    this.approve.emit();
+  }
+
+  protected onCloseTask(): void {
+    this.close.emit();
   }
 
   protected onLogTime(): void {
     this.logTime.emit();
-  }
-
-  protected onComplete(): void {
-    this.complete.emit();
   }
 
   protected onCancel(): void {
@@ -98,15 +171,37 @@ export class TaskDetailsComponent {
     const comment: TaskComment = {
       id: `comment-${Date.now()}`,
       taskId: this._task.id,
-      author: this.currentUser,
+      author: this.effectiveCurrentUser,
       content: text,
       createdAt: new Date().toISOString(),
     };
 
-    this.comments = [...this.comments, comment];
-    this.taskCommentsMap.set(this._task.id, this.comments);
+    this._comments = [...this._comments, comment];
+    this.taskCommentsMap.set(this._task.id, this._comments);
     this.newCommentText = '';
+    this.addComment.emit(text);
     this.cdr.markForCheck();
+  }
+
+  protected canDeleteComment(comment: TaskComment): boolean {
+    if (!comment) return false;
+    if (this.isAdmin) return true;
+    const currentId = this.effectiveCurrentUser.id;
+    return !!currentId && (comment.authorId === currentId || comment.author?.id === currentId);
+  }
+
+  protected onDeleteComment(commentId: string): void {
+    this._comments = this._comments.filter((c) => c.id !== commentId);
+    if (this._task) {
+      this.taskCommentsMap.set(this._task.id, this._comments);
+    }
+    this.deleteComment.emit(commentId);
+    this.cdr.markForCheck();
+  }
+
+  protected getAuthorName(author?: UserResult | null): string {
+    if (!author) return 'Anonymous';
+    return author.fullName || author.userName || 'User';
   }
 
   protected getAuthorInitial(author?: UserResult | null): string {
@@ -142,23 +237,23 @@ export class TaskDetailsComponent {
 
   private loadCommentsForTask(task: TaskDetailsResult | null): void {
     if (!task) {
-      this.comments = [];
+      this._comments = [];
       this.newCommentText = '';
       return;
     }
 
     if (this.taskCommentsMap.has(task.id)) {
-      this.comments = this.taskCommentsMap.get(task.id)!;
+      this._comments = this.taskCommentsMap.get(task.id)!;
       return;
     }
 
     if (task.comments && task.comments.length > 0) {
-      this.comments = [...task.comments];
-      this.taskCommentsMap.set(task.id, this.comments);
+      this._comments = [...task.comments];
+      this.taskCommentsMap.set(task.id, this._comments);
       return;
     }
 
-    this.comments = [];
+    this._comments = [];
     this.taskCommentsMap.set(task.id, []);
   }
 }

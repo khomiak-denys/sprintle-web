@@ -1,4 +1,4 @@
-export type TaskStatus = 'Todo' | 'InProgress' | 'InReview' | 'Done' | 'Cancelled';
+export type TaskStatus = 'Todo' | 'InProgress' | 'InReview' | 'Done' | 'Cancelled' | 'Closed';
 
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 
@@ -21,6 +21,7 @@ export interface TaskResult {
   readonly deadline: string | null;
   readonly assignee?: UserResult | null;
   readonly tags: string[];
+  readonly commentCount?: number;
 }
 
 export interface TimeLogResult {
@@ -35,9 +36,22 @@ export interface TimeLogResult {
 export interface TaskComment {
   readonly id: string;
   readonly taskId?: string;
-  readonly author: UserResult;
+  readonly authorId?: string;
+  readonly author: UserResult | null;
   readonly content: string;
   readonly createdAt: string;
+}
+
+export interface AddCommentRequest {
+  readonly content: string;
+}
+
+export type TaskAction = 'Assign' | 'SubmitForReview' | 'Approve' | 'Close' | 'Cancel';
+
+export interface TaskTransitionResult {
+  readonly action: TaskAction | string;
+  readonly targetStatus: TaskStatus;
+  readonly isAllowed: boolean;
 }
 
 export interface TaskDetailsResult extends TaskResult {
@@ -50,6 +64,7 @@ export interface TaskDetailsResult extends TaskResult {
   readonly createdById?: string;
   readonly assignedUser?: UserResult | null;
   readonly createdByUser?: UserResult;
+  readonly availableTransitions?: TaskTransitionResult[];
 }
 
 export interface PaginationResult<T> {
@@ -77,12 +92,12 @@ export interface UpdateTaskRequest {
   readonly tags?: string[];
 }
 
-export interface ChangeStatusRequest {
-  readonly status: TaskStatus;
-}
-
 export interface LogTimeRequest {
   readonly minutesSpent: number;
   readonly description?: string | null;
   readonly loggedDate: string; // YYYY-MM-DD
+}
+
+export interface ChangeTaskPriorityRequest {
+  readonly priority: Priority;
 }

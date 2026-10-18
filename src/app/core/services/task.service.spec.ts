@@ -5,11 +5,12 @@ import { TaskService } from './task.service';
 import {
   TaskResult,
   TaskDetailsResult,
+  TaskComment,
   PaginationResult,
   CreateTaskRequest,
   UpdateTaskRequest,
-  ChangeStatusRequest,
   LogTimeRequest,
+  AddCommentRequest,
 } from '../models/task.models';
 import { environment } from '../../../environments/environment';
 
@@ -165,45 +166,49 @@ describe('TaskService', () => {
     req.flush(null);
   });
 
-  it('changeStatus_Should_SendPatchRequestWithStatusPayload_When_Called', (done) => {
-    const payload: ChangeStatusRequest = { status: 'Done' };
-
-    service.changeStatus('task-1', payload).subscribe(() => {
+  it('submitForReview_Should_SendPatchRequestToSubmitForReviewEndpoint_When_Called', (done) => {
+    service.submitForReview('task-1').subscribe(() => {
       done();
     });
 
-    const req = httpTesting.expectOne(`${baseUrl}/task-1/status`);
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/submit-for-review`);
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual(payload);
+    expect(req.request.body).toBeNull();
     expect(req.request.withCredentials).toBeTrue();
     req.flush(null);
   });
 
-  it('logTime_Should_SendPostRequestWithLogPayload_When_Called', (done) => {
-    const payload: LogTimeRequest = {
-      minutesSpent: 45,
-      description: 'Code review',
-      loggedDate: '2026-10-01',
-    };
-
-    service.logTime('task-1', payload).subscribe(() => {
+  it('approve_Should_SendPatchRequestToApproveEndpoint_When_Called', (done) => {
+    service.approve('task-1').subscribe(() => {
       done();
     });
 
-    const req = httpTesting.expectOne(`${baseUrl}/task-1/time-logs`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual(payload);
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/approve`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toBeNull();
     expect(req.request.withCredentials).toBeTrue();
     req.flush(null);
   });
 
-  it('complete_Should_SendPostRequestToCompleteEndpoint_When_Called', (done) => {
+  it('close_Should_SendPatchRequestToCloseEndpoint_When_Called', (done) => {
+    service.close('task-1').subscribe(() => {
+      done();
+    });
+
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/close`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toBeNull();
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
+  });
+
+  it('complete_Should_SendPatchRequestToApproveEndpoint_When_Called', (done) => {
     service.complete('task-1').subscribe(() => {
       done();
     });
 
-    const req = httpTesting.expectOne(`${baseUrl}/task-1/complete`);
-    expect(req.request.method).toBe('POST');
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/approve`);
+    expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toBeNull();
     expect(req.request.withCredentials).toBeTrue();
     req.flush(null);
@@ -244,5 +249,71 @@ describe('TaskService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.withCredentials).toBeTrue();
     req.flush(mockPagedTasks);
+  });
+
+  it('getComments_Should_SendGetRequestToCommentsEndpoint_When_Called', (done) => {
+    const mockPagedComments: PaginationResult<TaskComment> = {
+      items: [
+        {
+          id: 'c-1',
+          taskId: 'task-1',
+          authorId: 'u-1',
+          author: null,
+          content: 'Test comment',
+          createdAt: '2026-10-11T12:00:00Z',
+        },
+      ],
+      page: 1,
+      pageSize: 20,
+      totalCount: 1,
+    };
+
+    service.getComments('task-1', 1, 20).subscribe((result) => {
+      expect(result).toEqual(mockPagedComments);
+      done();
+    });
+
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/comments?page=1&pageSize=20`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(mockPagedComments);
+  });
+
+  it('addComment_Should_SendPostRequestToCommentsEndpoint_When_Called', (done) => {
+    const request: AddCommentRequest = { content: 'Nice feature' };
+
+    service.addComment('task-1', request).subscribe((commentId) => {
+      expect(commentId).toBe('new-comment-id');
+      done();
+    });
+
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/comments`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(request);
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush('new-comment-id');
+  });
+
+  it('deleteComment_Should_SendDeleteRequestToCommentsEndpoint_When_Called', (done) => {
+    service.deleteComment('task-1', 'c-1').subscribe(() => {
+      done();
+    });
+
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/comments/c-1`);
+    expect(req.request.method).toBe('DELETE');
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
+  });
+
+  it('changePriority_Should_SendPatchRequestWithPriority_When_Called', (done) => {
+    service.changePriority('task-1', 'Critical').subscribe(() => {
+      done();
+    });
+
+    const req = httpTesting.expectOne(`${baseUrl}/task-1/priority`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ priority: 'Critical' });
+    expect(req.request.withCredentials).toBeTrue();
+    req.flush(null);
   });
 });

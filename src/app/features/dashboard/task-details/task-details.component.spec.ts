@@ -39,6 +39,13 @@ describe('TaskDetailsComponent', () => {
         createdAt: '2026-10-01T12:00:00Z',
       },
     ],
+    availableTransitions: [
+      { action: 'assign', targetStatus: 'InProgress', isAllowed: true },
+      { action: 'submit-for-review', targetStatus: 'InReview', isAllowed: true },
+      { action: 'approve', targetStatus: 'Done', isAllowed: true },
+      { action: 'close', targetStatus: 'Closed', isAllowed: true },
+      { action: 'cancel', targetStatus: 'Cancelled', isAllowed: true },
+    ],
   };
 
   beforeEach(async () => {
@@ -64,41 +71,28 @@ describe('TaskDetailsComponent', () => {
     expect(component.closeBlade.emit).toHaveBeenCalled();
   });
 
-  it('onStatusChange_Should_EmitStatusChange_When_NewStatusSelected', () => {
-    spyOn(component.statusChange, 'emit');
-    component['onStatusChange']('Done');
-    expect(component.statusChange.emit).toHaveBeenCalledWith('Done');
+  it('onAssign_Should_EmitAssign_When_Invoked', () => {
+    spyOn(component.assign, 'emit');
+    component['onAssign']();
+    expect(component.assign.emit).toHaveBeenCalled();
   });
 
-  it('onStatusChange_Should_NotEmit_When_SameStatusSelected', () => {
-    spyOn(component.statusChange, 'emit');
-    component['onStatusChange']('InProgress');
-    expect(component.statusChange.emit).not.toHaveBeenCalled();
+  it('onSubmitForReview_Should_EmitSubmitForReview_When_Invoked', () => {
+    spyOn(component.submitForReview, 'emit');
+    component['onSubmitForReview']();
+    expect(component.submitForReview.emit).toHaveBeenCalled();
   });
 
-  it('StateDropdown_Should_TriggerStatusChange_When_SelectionChanges', () => {
-    spyOn(component.statusChange, 'emit');
-    const selectEl: HTMLSelectElement =
-      fixture.nativeElement.querySelector('#details-state-select');
-    expect(selectEl).toBeTruthy();
-    expect(selectEl.value).toBe('InProgress');
-
-    selectEl.value = 'InReview';
-    selectEl.dispatchEvent(new Event('change'));
-
-    expect(component.statusChange.emit).toHaveBeenCalledWith('InReview');
+  it('onApprove_Should_EmitApprove_When_Invoked', () => {
+    spyOn(component.approve, 'emit');
+    component['onApprove']();
+    expect(component.approve.emit).toHaveBeenCalled();
   });
 
-  it('onLogTime_Should_EmitLogTime_When_Invoked', () => {
-    spyOn(component.logTime, 'emit');
-    component['onLogTime']();
-    expect(component.logTime.emit).toHaveBeenCalled();
-  });
-
-  it('onComplete_Should_EmitComplete_When_Invoked', () => {
-    spyOn(component.complete, 'emit');
-    component['onComplete']();
-    expect(component.complete.emit).toHaveBeenCalled();
+  it('onCloseTask_Should_EmitClose_When_Invoked', () => {
+    spyOn(component.close, 'emit');
+    component['onCloseTask']();
+    expect(component.close.emit).toHaveBeenCalled();
   });
 
   it('onCancel_Should_EmitCancel_When_Invoked', () => {
@@ -172,8 +166,20 @@ describe('TaskDetailsComponent', () => {
     expect(component['comments'].length).toBe(initialCount + 1);
     const added = component['comments'][component['comments'].length - 1];
     expect(added.content).toBe('Adding a test comment');
-    expect(added.author.fullName).toBe('Denys Khomiak');
+    expect(added.author?.fullName).toBe('Denys Khomiak');
     expect(component['newCommentText']).toBe('');
+  });
+
+  it('onDeleteComment_Should_EmitDeleteCommentAndRemoveLocal_When_Called', () => {
+    spyOn(component.deleteComment, 'emit');
+    component['onCommentInput']('Comment to delete');
+    component['onAddComment']();
+    const commentId = component['comments'][component['comments'].length - 1].id;
+
+    component['onDeleteComment'](commentId);
+
+    expect(component.deleteComment.emit).toHaveBeenCalledWith(commentId);
+    expect(component['comments'].some((c) => c.id === commentId)).toBeFalse();
   });
 
   it('onAddComment_Should_DoNothing_When_TextIsWhitespaceOrEmpty', () => {
@@ -202,5 +208,84 @@ describe('TaskDetailsComponent', () => {
 
   it('getAuthorInitial_Should_ReturnQuestionMark_When_AuthorIsNull', () => {
     expect(component['getAuthorInitial'](null)).toBe('?');
+  });
+
+  it('canChangePriority_Should_ReturnTrue_When_UserIsAdmin', () => {
+    component.isAdmin = true;
+    component.currentUser = {
+      id: 'other-user',
+      userName: 'other',
+      fullName: 'Other',
+      email: 'o@test.com',
+    };
+    expect(component['canChangePriority']).toBeTrue();
+  });
+
+  it('canChangePriority_Should_ReturnTrue_When_UserIsCreator', () => {
+    component.isAdmin = false;
+    component.currentUser = {
+      id: 'creator-1',
+      userName: 'creator',
+      fullName: 'Creator',
+      email: 'c@test.com',
+    };
+    expect(component['canChangePriority']).toBeTrue();
+  });
+
+  it('canChangePriority_Should_ReturnFalse_When_UserIsNotCreatorAndNotAdmin', () => {
+    component.isAdmin = false;
+    component.currentUser = {
+      id: 'other-user',
+      userName: 'other',
+      fullName: 'Other',
+      email: 'o@test.com',
+    };
+    expect(component['canChangePriority']).toBeFalse();
+  });
+
+  it('togglePriorityDropdown_Should_ToggleOpenState_When_UserCanChangePriority', () => {
+    component.isAdmin = true;
+    expect(component['isPriorityDropdownOpen']).toBeFalse();
+
+    component['togglePriorityDropdown']();
+    expect(component['isPriorityDropdownOpen']).toBeTrue();
+
+    component['togglePriorityDropdown']();
+    expect(component['isPriorityDropdownOpen']).toBeFalse();
+  });
+
+  it('togglePriorityDropdown_Should_NotOpen_When_UserCannotChangePriority', () => {
+    component.isAdmin = false;
+    component.currentUser = {
+      id: 'other-user',
+      userName: 'other',
+      fullName: 'Other',
+      email: 'o@test.com',
+    };
+    component['togglePriorityDropdown']();
+    expect(component['isPriorityDropdownOpen']).toBeFalse();
+  });
+
+  it('selectPriority_Should_EmitChangePriorityAndCloseDropdown_When_DifferentPrioritySelected', () => {
+    spyOn(component.changePriority, 'emit');
+    component.isAdmin = true;
+    component['isPriorityDropdownOpen'] = true;
+
+    component['selectPriority']('Low');
+
+    expect(component['isPriorityDropdownOpen']).toBeFalse();
+    expect(component.changePriority.emit).toHaveBeenCalledWith('Low');
+  });
+
+  it('selectPriority_Should_NotEmit_When_SamePrioritySelected', () => {
+    spyOn(component.changePriority, 'emit');
+    component.isAdmin = true;
+    component['isPriorityDropdownOpen'] = true;
+
+    // mockDetails priority is 'Critical'
+    component['selectPriority']('Critical');
+
+    expect(component['isPriorityDropdownOpen']).toBeFalse();
+    expect(component.changePriority.emit).not.toHaveBeenCalled();
   });
 });
