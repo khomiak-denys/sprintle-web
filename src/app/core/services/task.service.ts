@@ -12,7 +12,6 @@ import {
   LogTimeRequest,
   AddCommentRequest,
   Priority,
-  TaskStatus,
 } from '../models/task.models';
 
 @Injectable({ providedIn: 'root' })
@@ -132,24 +131,6 @@ export class TaskService {
   /** PATCH /api/v1/tasks/{id}/approve */
   complete(id: string): Observable<void> {
     return this.approve(id);
-  }
-
-  /** PATCH /api/v1/tasks/{id}/status (deprecated compatibility fallback) */
-  changeStatus(id: string, request: { status: TaskStatus }): Observable<void> {
-    switch (request.status) {
-      case 'InReview':
-        return this.submitForReview(id);
-      case 'Done':
-        return this.approve(id);
-      case 'Closed':
-        return this.close(id);
-      case 'Cancelled':
-        return this.cancel(id);
-      default:
-        return this.http.patch<void>(`${this.apiUrl}/${id}/status`, request, {
-          withCredentials: true,
-        });
-    }
   }
 
   /** DELETE /api/v1/tasks/{id} */
