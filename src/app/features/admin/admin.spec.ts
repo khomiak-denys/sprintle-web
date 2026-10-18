@@ -172,7 +172,9 @@ describe('AdminComponent', () => {
     taskServiceSpy = jasmine.createSpyObj('TaskService', [
       'getAll',
       'getById',
-      'changeStatus',
+      'submitForReview',
+      'approve',
+      'close',
       'complete',
       'cancel',
     ]);
@@ -180,7 +182,9 @@ describe('AdminComponent', () => {
       of({ items: mockTasks, page: 1, pageSize: 10, totalCount: mockTasks.length }),
     );
     taskServiceSpy.getById.and.returnValue(of(mockTaskDetails));
-    taskServiceSpy.changeStatus.and.returnValue(of(void 0));
+    taskServiceSpy.submitForReview.and.returnValue(of(void 0));
+    taskServiceSpy.approve.and.returnValue(of(void 0));
+    taskServiceSpy.close.and.returnValue(of(void 0));
     taskServiceSpy.complete.and.returnValue(of(void 0));
     taskServiceSpy.cancel.and.returnValue(of(void 0));
 
@@ -362,13 +366,22 @@ describe('AdminComponent', () => {
     expect(component.snapshot.selectedTaskDetails).toBeNull();
   });
 
-  it('onTaskStatusChange_Should_UpdateStatusViaTaskService_When_Invoked', () => {
+  it('onTaskApprove_Should_UpdateStatusViaTaskService_When_Invoked', () => {
     component.onSelectTask(mockTasks[0]);
-    component.onTaskStatusChange('Done');
+    component.onTaskApprove();
 
-    expect(taskServiceSpy.changeStatus).toHaveBeenCalledWith('task-1', { status: 'Done' });
-    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Status changed to Done.');
+    expect(taskServiceSpy.approve).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task approved and completed.');
     expect(component.snapshot.selectedTaskDetails?.status).toBe('Done');
+  });
+
+  it('onTaskClose_Should_UpdateStatusViaTaskService_When_Invoked', () => {
+    component.onSelectTask(mockTasks[0]);
+    component.onTaskClose();
+
+    expect(taskServiceSpy.close).toHaveBeenCalledWith('task-1');
+    expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task closed.');
+    expect(component.snapshot.selectedTaskDetails?.status).toBe('Closed');
   });
 
   it('onTaskComplete_Should_CallTaskServiceComplete_When_Invoked', () => {
