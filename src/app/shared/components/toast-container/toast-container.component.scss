@@ -37,23 +37,39 @@
   }
 
   &.toast-success {
-    &::before { background: #10b981; }
-    .toast-progress-bar { background: linear-gradient(90deg, #10b981, #34d399); }
+    &::before {
+      background: #10b981;
+    }
+    .toast-progress-bar {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
   }
 
   &.toast-error {
-    &::before { background: #ef4444; }
-    .toast-progress-bar { background: linear-gradient(90deg, #ef4444, #f87171); }
+    &::before {
+      background: #ef4444;
+    }
+    .toast-progress-bar {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
   }
 
   &.toast-warning {
-    &::before { background: #f59e0b; }
-    .toast-progress-bar { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    &::before {
+      background: #f59e0b;
+    }
+    .toast-progress-bar {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
   }
 
   &.toast-info {
-    &::before { background: #0284c7; }
-    .toast-progress-bar { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+    &::before {
+      background: #0284c7;
+    }
+    .toast-progress-bar {
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+    }
   }
 }
 
