@@ -29,33 +29,21 @@ describe('NotificationService', () => {
     // Only 3 should be visible initially in both getter and observable stream
     expect(service.notifications().length).toBe(3);
     expect(emittedToasts.length).toBe(3);
-    expect(emittedToasts.map((n) => n.message)).toEqual([
-      'Error 1',
-      'Error 2',
-      'Error 3',
-    ]);
+    expect(emittedToasts.map((n) => n.message)).toEqual(['Error 1', 'Error 2', 'Error 3']);
 
     // Manually dismiss Error 1: Error 4 should be promoted immediately
     const firstId = emittedToasts[0].id;
     service.dismiss(firstId);
 
     expect(emittedToasts.length).toBe(3);
-    expect(emittedToasts.map((n) => n.message)).toEqual([
-      'Error 2',
-      'Error 3',
-      'Error 4',
-    ]);
+    expect(emittedToasts.map((n) => n.message)).toEqual(['Error 2', 'Error 3', 'Error 4']);
 
     // Manually dismiss Error 2: Error 5 should be promoted immediately
     const secondId = emittedToasts[0].id;
     service.dismiss(secondId);
 
     expect(emittedToasts.length).toBe(3);
-    expect(emittedToasts.map((n) => n.message)).toEqual([
-      'Error 3',
-      'Error 4',
-      'Error 5',
-    ]);
+    expect(emittedToasts.map((n) => n.message)).toEqual(['Error 3', 'Error 4', 'Error 5']);
 
     // After 3000ms, Error 3, 4, 5 (started at t=0, t=0, t=0) expire
     tick(3000);
@@ -75,20 +63,12 @@ describe('NotificationService', () => {
     service.show('Toast 4', 'info', { durationMs: 3000 });
 
     expect(emittedToasts.length).toBe(3);
-    expect(emittedToasts.map((n) => n.message)).toEqual([
-      'Toast 1',
-      'Toast 2',
-      'Toast 3',
-    ]);
+    expect(emittedToasts.map((n) => n.message)).toEqual(['Toast 1', 'Toast 2', 'Toast 3']);
 
     // At 1000ms, only Toast 1 expires, promoting Toast 4
     tick(1000);
     expect(emittedToasts.length).toBe(3);
-    expect(emittedToasts.map((n) => n.message)).toEqual([
-      'Toast 2',
-      'Toast 3',
-      'Toast 4',
-    ]);
+    expect(emittedToasts.map((n) => n.message)).toEqual(['Toast 2', 'Toast 3', 'Toast 4']);
 
     // At 3000ms total (+2000ms), Toast 2 and 3 expire
     tick(2000);

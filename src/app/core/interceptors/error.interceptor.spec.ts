@@ -54,9 +54,7 @@ describe('errorInterceptor', () => {
     expect(notificationService.error).toHaveBeenCalledWith(
       "The length of 'New Password' must be at least 8 characters. You entered 7 characters.",
     );
-    expect(notificationService.error).toHaveBeenCalledWith(
-      'Passwords must match.',
-    );
+    expect(notificationService.error).toHaveBeenCalledWith('Passwords must match.');
   });
 
   it('should use detail field directly without header for 401 Unauthorized errors', () => {
@@ -77,8 +75,6 @@ describe('errorInterceptor', () => {
     );
 
     expect(notificationService.error).toHaveBeenCalledTimes(1);
-    expect(notificationService.error).toHaveBeenCalledWith(
-      'Invalid email or password',
-    );
+    expect(notificationService.error).toHaveBeenCalledWith('Invalid email or password');
   });
 });

@@ -1,9 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { RoleService } from './role.service';
 import { environment } from '../../../environments/environment';
 
@@ -15,11 +12,7 @@ describe('RoleService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        RoleService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [RoleService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(RoleService);

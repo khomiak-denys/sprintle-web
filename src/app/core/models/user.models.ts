@@ -30,4 +30,4 @@ export interface UserResult {
   email: string;
   userName: string;
   fullName: string | null;
-}
+}
