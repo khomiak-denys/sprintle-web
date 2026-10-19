@@ -6,6 +6,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ProfileComponent } from './profile';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { UserProfile } from '../../core/models/user.models';
 
@@ -14,6 +16,8 @@ describe('ProfileComponent', () => {
   let fixture: ComponentFixture<ProfileComponent>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
   let userServiceSpy: jasmine.SpyObj<UserService>;
+  let workspaceServiceSpy: jasmine.SpyObj<WorkspaceService>;
+  let navHistoryServiceSpy: jasmine.SpyObj<NavigationHistoryService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
 
   const mockProfile: UserProfile = {
@@ -62,12 +66,24 @@ describe('ProfileComponent', () => {
       'info',
     ]);
 
+    workspaceServiceSpy = jasmine.createSpyObj('WorkspaceService', ['selectWorkspace'], {
+      currentWorkspace: { id: 'ws-123', name: 'Dev Workspace' } as any,
+    });
+
+    navHistoryServiceSpy = jasmine.createSpyObj('NavigationHistoryService', [
+      'getPreviousUrl',
+      'setPreviousUrl',
+    ]);
+    navHistoryServiceSpy.getPreviousUrl.and.returnValue(null);
+
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, ReactiveFormsModule],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authServiceSpy },
         { provide: UserService, useValue: userServiceSpy },
+        { provide: WorkspaceService, useValue: workspaceServiceSpy },
+        { provide: NavigationHistoryService, useValue: navHistoryServiceSpy },
         { provide: NotificationService, useValue: notificationServiceSpy },
         {
           provide: ActivatedRoute,
@@ -230,10 +246,30 @@ describe('ProfileComponent', () => {
   it('backToDashboardRoute_Should_ReturnAdminDashboard_When_UserIsAdmin', () => {
     authServiceSpy.isAdmin.and.returnValue(true);
     expect(component.backToDashboardRoute).toBe('/admin');
+    expect(component.backButtonLabel).toBe('Back to Admin Dashboard');
   });
 
-  it('backToDashboardRoute_Should_ReturnRootDashboard_When_UserIsNotAdmin', () => {
+  it('backToDashboardRoute_Should_ReturnRootDashboard_When_UserIsNotAdmin_And_HasWorkspace', () => {
     authServiceSpy.isAdmin.and.returnValue(false);
+    component.navigatedFrom = null;
     expect(component.backToDashboardRoute).toBe('/');
+    expect(component.backButtonLabel).toBe('Back to Dashboard');
+  });
+
+  it('backToDashboardRoute_Should_ReturnWorkspaces_When_UserNavigatedFromWorkspaces', () => {
+    authServiceSpy.isAdmin.and.returnValue(false);
+    component.navigatedFrom = '/workspaces';
+    expect(component.backToDashboardRoute).toBe('/workspaces');
+    expect(component.backButtonLabel).toBe('Back to Workspaces');
+  });
+
+  it('backToDashboardRoute_Should_ReturnWorkspaces_When_UserHasNoActiveWorkspace', () => {
+    authServiceSpy.isAdmin.and.returnValue(false);
+    component.navigatedFrom = null;
+    (
+      Object.getOwnPropertyDescriptor(workspaceServiceSpy, 'currentWorkspace')?.get as jasmine.Spy
+    ).and.returnValue(null);
+    expect(component.backToDashboardRoute).toBe('/workspaces');
+    expect(component.backButtonLabel).toBe('Back to Workspaces');
   });
 });
