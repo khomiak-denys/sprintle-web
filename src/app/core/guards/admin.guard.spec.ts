@@ -43,7 +43,9 @@ describe('adminGuard', () => {
 
     expect(result).toBe(mockTree);
     expect(routerSpy.createUrlTree).toHaveBeenCalledWith(['/']);
-    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Access denied. Administrator privileges are required.');
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith(
+      'Access denied. Administrator privileges are required.',
+    );
   });
 
   it('adminGuard_Should_RedirectToRootAndNotify_When_UserIsNotAuthenticated', () => {
@@ -56,6 +58,8 @@ describe('adminGuard', () => {
 
     expect(result).toBe(mockTree);
     expect(routerSpy.createUrlTree).toHaveBeenCalledWith(['/']);
-    expect(notificationServiceSpy.error).toHaveBeenCalledWith('Access denied. Administrator privileges are required.');
+    expect(notificationServiceSpy.error).toHaveBeenCalledWith(
+      'Access denied. Administrator privileges are required.',
+    );
   });
 });

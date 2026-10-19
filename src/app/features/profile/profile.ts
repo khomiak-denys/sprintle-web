@@ -24,6 +24,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { UserService } from '../../core/services/user.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { NavigationHistoryService } from '../../core/services/navigation-history.service';
 import { UserProfile } from '../../core/models/user.models';
 import { AutoTrimDirective } from '../../shared/directives/auto-trim.directive';
 import { trimFormGroup } from '../../shared/utils/form.utils';
@@ -107,8 +109,85 @@ export class ProfileComponent implements OnInit {
     return this.computeViewState(this.stateSubject.value);
   }
 
+  private readonly workspaceService = inject(WorkspaceService, { optional: true });
+  private readonly navHistoryService = inject(NavigationHistoryService, { optional: true });
+
+  private _navigatedFrom: string | null = null;
+
+  get navigatedFrom(): string | null {
+    if (this._navigatedFrom !== null) {
+      return this._navigatedFrom;
+    }
+    return this.resolveNavigatedFrom();
+  }
+
+  set navigatedFrom(value: string | null) {
+    this._navigatedFrom = value;
+  }
+
+  get hasActiveWorkspace(): boolean {
+    if (!this.workspaceService) {
+      return true; // Fallback for tests where WorkspaceService is not provided
+    }
+    return !!this.workspaceService.currentWorkspace?.id;
+  }
+
   get backToDashboardRoute(): string {
-    return this.authService.isAdmin() ? '/admin' : '/';
+    if (this.authService.isAdmin() || this.navigatedFrom === '/admin') {
+      return '/admin';
+    }
+
+    if (this.navigatedFrom === '/workspaces' || !this.hasActiveWorkspace) {
+      return '/workspaces';
+    }
+
+    return '/';
+  }
+
+  get backButtonLabel(): string {
+    if (this.authService.isAdmin() || this.backToDashboardRoute === '/admin') {
+      return 'Back to Admin Dashboard';
+    }
+
+    if (this.backToDashboardRoute === '/workspaces') {
+      return 'Back to Workspaces';
+    }
+
+    return 'Back to Dashboard';
+  }
+
+  private resolveNavigatedFrom(): string | null {
+    const nav = this.router.getCurrentNavigation();
+    if (nav?.extras?.state?.['from']) {
+      return this.normalizeFrom(nav.extras.state['from']);
+    }
+
+    if (typeof history !== 'undefined' && history.state?.from) {
+      return this.normalizeFrom(history.state.from);
+    }
+
+    if (this.navHistoryService) {
+      const prev = this.navHistoryService.getPreviousUrl();
+      if (prev) {
+        return this.normalizeFrom(prev);
+      }
+    }
+
+    const fromQuery = this.route.snapshot?.queryParamMap?.get('from');
+    if (fromQuery) {
+      return this.normalizeFrom(fromQuery);
+    }
+
+    return null;
+  }
+
+  private normalizeFrom(url: string | null): string | null {
+    if (!url) return null;
+    const clean = url.split('?')[0].split('#')[0];
+    if (clean.startsWith('/workspaces')) return '/workspaces';
+    if (clean.startsWith('/admin')) return '/admin';
+    if (clean === '/' || clean === '') return '/';
+    return clean;
   }
 
   protected readonly profileForm: FormGroup;

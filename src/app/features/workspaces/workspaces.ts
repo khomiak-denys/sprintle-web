@@ -241,7 +241,7 @@ export class WorkspacesComponent implements OnInit {
   // ==========================================
   protected onProfile(): void {
     this.updateState({ dropdownOpen: false });
-    this.router.navigate(['/profile']);
+    this.router.navigate(['/profile'], { state: { from: '/workspaces' } });
   }
 
   protected onAdmin(): void {

@@ -33,11 +33,7 @@ export class NotificationService {
   /**
    * Display a new notification toast, or queue it if 3 are already visible.
    */
-  show(
-    message: string,
-    type: NotificationType = 'info',
-    options?: NotificationOptions,
-  ): string {
+  show(message: string, type: NotificationType = 'info', options?: NotificationOptions): string {
     const id = this.generateId();
     const durationMs = options?.durationMs ?? DEFAULT_DURATIONS[type];
 
@@ -94,9 +90,7 @@ export class NotificationService {
     // If visible, remove and promote next waiting toast from the queue
     const wasVisible = this.notificationsSubject.value.some((n) => n.id === id);
     if (wasVisible) {
-      this.notificationsSubject.next(
-        this.notificationsSubject.value.filter((n) => n.id !== id),
-      );
+      this.notificationsSubject.next(this.notificationsSubject.value.filter((n) => n.id !== id));
       this.processQueue();
     }
   }
@@ -117,10 +111,7 @@ export class NotificationService {
   }
 
   private processQueue(): void {
-    while (
-      this.notificationsSubject.value.length < MAX_VISIBLE_TOASTS &&
-      this.queue.length > 0
-    ) {
+    while (this.notificationsSubject.value.length < MAX_VISIBLE_TOASTS && this.queue.length > 0) {
       const nextToast = this.queue.shift();
       if (nextToast) {
         this.displayToast(nextToast);
