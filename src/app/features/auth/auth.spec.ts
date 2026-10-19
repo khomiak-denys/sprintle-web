@@ -216,4 +216,3 @@ describe('AuthComponent', () => {
     expect(component['registerForm'].hasError('passwordMismatch')).toBeFalse();
   });
 });
-
