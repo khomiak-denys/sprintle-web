@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "task-tracker-web": {
+    "sprintle-web": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -61,10 +61,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "task-tracker-web:build:production"
+              "buildTarget": "sprintle-web:build:production"
             },
             "development": {
-              "buildTarget": "task-tracker-web:build:development"
+              "buildTarget": "sprintle-web:build:development"
             }
           },
           "defaultConfiguration": "development"

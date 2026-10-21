@@ -238,9 +238,9 @@
           <div class="comment-composer">
             <div
               class="composer-avatar"
-              [title]="effectiveCurrentUser.fullName || effectiveCurrentUser.userName"
+              [title]="currentUser?.fullName || currentUser?.userName || 'User'"
             >
-              {{ getAuthorInitial(effectiveCurrentUser) }}
+              {{ getAuthorInitial(currentUser) }}
             </div>
             <div class="composer-box">
               <textarea
