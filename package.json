@@ -1,5 +1,5 @@
 {
-  "name": "task-tracker-web",
+  "name": "sprintle-web",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",

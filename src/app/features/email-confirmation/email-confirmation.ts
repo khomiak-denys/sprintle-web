@@ -115,7 +115,7 @@ export class EmailConfirmationComponent implements OnInit {
           this.updateState({
             status: 'success',
             message:
-              'Your email address has been successfully verified! You now have full access to Task Tracker.',
+              'Your email address has been successfully verified! You now have full access to Sprintle.',
             countdown: 5,
           });
           this.notificationService.success('Email confirmed successfully!');

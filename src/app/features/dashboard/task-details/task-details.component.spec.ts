@@ -1,10 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TaskDetailsComponent } from './task-details.component';
-import { TaskDetailsResult } from '../../../core/models/task.models';
+import { TaskDetailsResult, UserResult } from '../../../core/models/task.models';
 
 describe('TaskDetailsComponent', () => {
   let component: TaskDetailsComponent;
   let fixture: ComponentFixture<TaskDetailsComponent>;
+
+  const mockCurrentUser: UserResult = {
+    id: 'user-current',
+    userName: 'alex_dev',
+    fullName: 'Alex Developer',
+    email: 'alex@example.com',
+  };
 
   const mockDetails: TaskDetailsResult = {
     id: 'task-101',
@@ -56,6 +63,7 @@ describe('TaskDetailsComponent', () => {
     fixture = TestBed.createComponent(TaskDetailsComponent);
     component = fixture.componentInstance;
     component.task = mockDetails;
+    component.currentUser = mockCurrentUser;
     component.isOpen = true;
     fixture.detectChanges();
   });
@@ -166,7 +174,7 @@ describe('TaskDetailsComponent', () => {
     expect(component['comments'].length).toBe(initialCount + 1);
     const added = component['comments'][component['comments'].length - 1];
     expect(added.content).toBe('Adding a test comment');
-    expect(added.author?.fullName).toBe('Denys Khomiak');
+    expect(added.author?.fullName).toBe('Alex Developer');
     expect(component['newCommentText']).toBe('');
   });
 
@@ -287,5 +295,78 @@ describe('TaskDetailsComponent', () => {
 
     expect(component['isPriorityDropdownOpen']).toBeFalse();
     expect(component.changePriority.emit).not.toHaveBeenCalled();
+  });
+
+  it('canChangePriority_Should_ReturnFalse_When_CurrentUserIsNullAndNotAdmin', () => {
+    component.isAdmin = false;
+    component.currentUser = null;
+    expect(component['canChangePriority']).toBeFalse();
+  });
+
+  it('canDeleteComment_Should_ReturnTrue_When_UserIsAdmin', () => {
+    component.isAdmin = true;
+    component.currentUser = {
+      id: 'other-user',
+      userName: 'other',
+      fullName: 'Other',
+      email: 'o@test.com',
+    };
+    const comment = {
+      id: 'c-1',
+      authorId: 'creator-1',
+      author: null,
+      content: 'hello',
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    expect(component['canDeleteComment'](comment)).toBeTrue();
+  });
+
+  it('canDeleteComment_Should_ReturnTrue_When_UserIsCommentAuthor', () => {
+    component.isAdmin = false;
+    component.currentUser = {
+      id: 'creator-1',
+      userName: 'creator',
+      fullName: 'Creator',
+      email: 'c@test.com',
+    };
+    const comment = {
+      id: 'c-1',
+      authorId: 'creator-1',
+      author: null,
+      content: 'hello',
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    expect(component['canDeleteComment'](comment)).toBeTrue();
+  });
+
+  it('canDeleteComment_Should_ReturnFalse_When_UserIsNotAuthorAndNotAdmin', () => {
+    component.isAdmin = false;
+    component.currentUser = {
+      id: 'other-user',
+      userName: 'other',
+      fullName: 'Other',
+      email: 'o@test.com',
+    };
+    const comment = {
+      id: 'c-1',
+      authorId: 'creator-1',
+      author: null,
+      content: 'hello',
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    expect(component['canDeleteComment'](comment)).toBeFalse();
+  });
+
+  it('canDeleteComment_Should_ReturnFalse_When_CurrentUserIsNullAndNotAdmin', () => {
+    component.isAdmin = false;
+    component.currentUser = null;
+    const comment = {
+      id: 'c-1',
+      authorId: 'creator-1',
+      author: null,
+      content: 'hello',
+      createdAt: '2026-10-01T00:00:00Z',
+    };
+    expect(component['canDeleteComment'](comment)).toBeFalse();
   });
 });

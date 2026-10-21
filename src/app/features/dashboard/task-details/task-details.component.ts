@@ -77,21 +77,10 @@ export class TaskDetailsComponent {
 
   private readonly taskCommentsMap = new Map<string, TaskComment[]>();
 
-  protected readonly defaultCurrentUser: UserResult = {
-    id: 'user-current',
-    userName: 'denys_khomiak',
-    fullName: 'Denys Khomiak',
-    email: 'denys.khomiak@tasktracker.local',
-  };
-
-  protected get effectiveCurrentUser(): UserResult {
-    return this.currentUser || this.defaultCurrentUser;
-  }
-
   protected get canChangePriority(): boolean {
     if (this.isAdmin) return true;
     if (!this._task) return false;
-    const currentUserId = this.effectiveCurrentUser?.id;
+    const currentUserId = this.currentUser?.id;
     if (!currentUserId) return false;
     const creatorId = this._task.createdById || this._task.createdBy?.id;
     return !!creatorId && creatorId.toLowerCase() === currentUserId.toLowerCase();
@@ -169,7 +158,8 @@ export class TaskDetailsComponent {
     const comment: TaskComment = {
       id: `comment-${Date.now()}`,
       taskId: this._task.id,
-      author: this.effectiveCurrentUser,
+      author: this.currentUser,
+      authorId: this.currentUser?.id,
       content: text,
       createdAt: new Date().toISOString(),
     };
@@ -184,7 +174,7 @@ export class TaskDetailsComponent {
   protected canDeleteComment(comment: TaskComment): boolean {
     if (!comment) return false;
     if (this.isAdmin) return true;
-    const currentId = this.effectiveCurrentUser.id;
+    const currentId = this.currentUser?.id;
     return !!currentId && (comment.authorId === currentId || comment.author?.id === currentId);
   }
 
