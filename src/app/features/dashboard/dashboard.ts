@@ -1217,9 +1217,12 @@ export class DashboardComponent implements OnInit {
     priority: Priority | 'ALL',
   ): TaskResult[] {
     const q = (query || '').toLowerCase().trim();
+    const cleanNumberQuery = q.startsWith('#') ? q.slice(1) : q;
     return tasks.filter((t) => {
+      const taskNumberLower = String(t.number ?? '').toLowerCase();
       const matchesQuery =
         !q ||
+        (cleanNumberQuery && taskNumberLower.includes(cleanNumberQuery)) ||
         t.title.toLowerCase().includes(q) ||
         (t.description && t.description.toLowerCase().includes(q)) ||
         t.tags.some((tag) => tag.toLowerCase().includes(q));

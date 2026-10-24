@@ -88,6 +88,14 @@ $az-task-gold: #ffb900;
   color: $az-text;
   line-height: 1.35;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.blade-task-number {
+  color: $az-subtext;
+  font-weight: 500;
 }
 
 /* Command Ribbon */

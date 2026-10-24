@@ -16,6 +16,7 @@ describe('TaskDetailsComponent', () => {
   const mockDetails: TaskDetailsResult = {
     id: 'task-101',
     workspaceId: 'ws-arch-core',
+    number: 'DMS-101',
     title: 'Migrate to Azure DevOps Board',
     description: 'Break tasks into kanban columns and add status workflow',
     status: 'InProgress',
