@@ -370,4 +370,9 @@ describe('TaskDetailsComponent', () => {
     };
     expect(component['canDeleteComment'](comment)).toBeFalse();
   });
+
+  it('Init_Should_RenderTaskNumberInHeader_When_Provided', () => {
+    const numberEl = fixture.nativeElement.querySelector('.blade-task-number');
+    expect(numberEl?.textContent?.trim()).toBe('DMS-101');
+  });
 });
