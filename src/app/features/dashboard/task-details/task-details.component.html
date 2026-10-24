@@ -26,7 +26,10 @@
 
     <!-- Title Header -->
     <div class="blade-title-container">
-      <h2 id="blade-title" class="blade-title-text">{{ task.title }}</h2>
+      <h2 id="blade-title" class="blade-title-text">
+        <span class="blade-task-number">{{ task.number }}</span>
+        <span>{{ task.title }}</span>
+      </h2>
     </div>
 
     <!-- Work Item Command Ribbon / State & Actions -->

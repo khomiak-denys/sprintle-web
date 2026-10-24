@@ -22,6 +22,7 @@ describe('TaskService', () => {
   const mockTask: TaskResult = {
     id: 'task-1',
     workspaceId: 'ws-arch-core',
+    number: 'DMS-1',
     title: 'Design Dashboard Schema',
     description: 'Create Azure styled dashboard representation for tasks',
     status: 'InProgress',

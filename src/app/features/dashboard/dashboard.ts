@@ -1218,8 +1218,10 @@ export class DashboardComponent implements OnInit {
   ): TaskResult[] {
     const q = (query || '').toLowerCase().trim();
     return tasks.filter((t) => {
+      const taskNumberLower = String(t.number ?? '').toLowerCase();
       const matchesQuery =
         !q ||
+        (q && taskNumberLower.includes(q)) ||
         t.title.toLowerCase().includes(q) ||
         (t.description && t.description.toLowerCase().includes(q)) ||
         t.tags.some((tag) => tag.toLowerCase().includes(q));

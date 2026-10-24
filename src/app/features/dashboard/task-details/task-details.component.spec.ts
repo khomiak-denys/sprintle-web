@@ -16,6 +16,7 @@ describe('TaskDetailsComponent', () => {
   const mockDetails: TaskDetailsResult = {
     id: 'task-101',
     workspaceId: 'ws-arch-core',
+    number: 'DMS-101',
     title: 'Migrate to Azure DevOps Board',
     description: 'Break tasks into kanban columns and add status workflow',
     status: 'InProgress',
@@ -368,5 +369,10 @@ describe('TaskDetailsComponent', () => {
       createdAt: '2026-10-01T00:00:00Z',
     };
     expect(component['canDeleteComment'](comment)).toBeFalse();
+  });
+
+  it('Init_Should_RenderTaskNumberInHeader_When_Provided', () => {
+    const numberEl = fixture.nativeElement.querySelector('.blade-task-number');
+    expect(numberEl?.textContent?.trim()).toBe('DMS-101');
   });
 });

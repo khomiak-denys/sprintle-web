@@ -35,6 +35,7 @@ describe('DashboardComponent', () => {
     {
       id: 'task-1',
       workspaceId: 'ws-arch-core',
+      number: 'DMS-1',
       title: 'Setup OTLP Tracing',
       description: 'Distributed tracing across services',
       status: 'InProgress',
@@ -51,6 +52,7 @@ describe('DashboardComponent', () => {
     {
       id: 'task-2',
       workspaceId: 'ws-arch-core',
+      number: 'DMS-2',
       title: 'Fix Navigation Header',
       description: 'Align Azure logo and menu',
       status: 'Todo',
@@ -285,6 +287,30 @@ describe('DashboardComponent', () => {
     component['setStatusFilter']('InProgress');
     component['setPriorityFilter']('High');
     component['onSearchChange']('OTLP');
+
+    component.filteredTasks$.subscribe((tasks) => {
+      expect(tasks.length).toBe(1);
+      expect(tasks[0].id).toBe('task-1');
+      done();
+    });
+  });
+
+  it('filterTasks_Should_FilterTasksByTaskNumber_When_NumberQueryProvided', (done) => {
+    component['setStatusFilter']('ALL');
+    component['setPriorityFilter']('ALL');
+    component['onSearchChange']('DMS-2');
+
+    component.filteredTasks$.subscribe((tasks) => {
+      expect(tasks.length).toBe(1);
+      expect(tasks[0].id).toBe('task-2');
+      expect(tasks[0].number).toBe('DMS-2');
+      done();
+    });
+  });
+
+  it('filterTasks_Should_NotThrowAndMatchQuery_When_TaskNumberIsNumeric', (done) => {
+    const numericTask = { ...mockTasks[0], number: 42 as unknown as string };
+    component['updateState']({ tasks: [numericTask], searchQuery: '42' });
 
     component.filteredTasks$.subscribe((tasks) => {
       expect(tasks.length).toBe(1);

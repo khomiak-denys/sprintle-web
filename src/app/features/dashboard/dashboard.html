@@ -319,6 +319,9 @@
                         <div class="card-left-strip"></div>
                         <div class="card-inner">
                           <div class="card-top-row">
+                            <span class="task-number" [id]="'task-number-' + task.id">{{
+                              task.number
+                            }}</span>
                             <span class="priority-pill priority-{{ task.priority.toLowerCase() }}">
                               {{ task.priority }}
                             </span>
@@ -441,6 +444,7 @@
             <table class="azure-table" id="tasks-table">
               <thead>
                 <tr>
+                  <th scope="col" style="width: 64px">ID</th>
                   <th scope="col" style="width: 130px">Status</th>
                   <th scope="col" style="width: 100px">Priority</th>
                   <th scope="col">Title & Scope</th>
@@ -454,6 +458,9 @@
                 } @else {
                   @for (task of filteredTasks$ | async; track task.id) {
                     <tr class="table-row" (click)="onSelectTask(task)">
+                      <td>
+                        <span class="task-number">{{ task.number }}</span>
+                      </td>
                       <td>
                         <span class="status-pill status-{{ task.status.toLowerCase() }}">
                           <span class="status-dot"></span>
@@ -495,7 +502,7 @@
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="5" class="empty-row">
+                      <td colspan="6" class="empty-row">
                         <div class="empty-state">
                           <svg
                             width="40"

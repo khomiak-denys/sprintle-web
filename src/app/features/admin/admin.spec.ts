@@ -44,6 +44,7 @@ describe('AdminComponent', () => {
     {
       id: 'task-1',
       workspaceId: 'ws-arch-core',
+      number: 'DMS-1',
       title: 'Infrastructure Deployment',
       description: 'Deploy gateway and microservices',
       status: 'InProgress',
