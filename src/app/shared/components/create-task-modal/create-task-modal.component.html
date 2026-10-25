@@ -1,0 +1,185 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onClose()"></div>
+  <div class="azure-modal" role="dialog" aria-labelledby="modal-create-title">
+    <div class="modal-header">
+      <h2 id="modal-create-title" class="modal-title">Create New Work Item</h2>
+      <button type="button" class="modal-close-btn" (click)="onClose()" aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    <form [formGroup]="createTaskForm" (ngSubmit)="onSubmit()" class="azure-modal-form">
+      <div class="form-field">
+        <label for="create-title">Title <span class="required">*</span></label>
+        <input
+          id="create-title"
+          type="text"
+          formControlName="title"
+          placeholder="e.g. Implement OIDC token endpoint"
+          class="azure-input"
+        />
+        <div class="field-error-slot" aria-live="polite">
+          @if (
+            createTaskForm.get('title')?.touched &&
+            createTaskForm.get('title')?.errors?.['required']
+          ) {
+            <span class="field-error">Title is required.</span>
+          } @else if (
+            createTaskForm.get('title')?.touched &&
+            createTaskForm.get('title')?.errors?.['minlength']
+          ) {
+            <span class="field-error">Title must be at least 3 characters.</span>
+          }
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-field">
+          <label for="create-priority">Priority <span class="required">*</span></label>
+          <select id="create-priority" formControlName="priority" class="azure-select">
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+
+        <div class="form-field">
+          <label for="create-deadline">Deadline</label>
+          <input id="create-deadline" type="date" formControlName="deadline" class="azure-input" />
+        </div>
+      </div>
+
+      <div class="form-row-2">
+        <div class="form-field">
+          <label for="btn-create-assignee">Assignee</label>
+          <div class="create-assignee-control">
+            @if (selectedAssignee) {
+              <div class="assignee-selected-badge">
+                <button
+                  type="button"
+                  id="btn-create-assignee"
+                  class="assignee-picker-trigger is-assigned"
+                  (click)="onOpenAssigneeDialog($event)"
+                  title="Change assignee"
+                >
+                  <span class="avatar-letter">{{ getMemberInitial(selectedAssignee) }}</span>
+                  <span class="assignee-name">{{
+                    selectedAssignee.fullName || selectedAssignee.userName
+                  }}</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-clear-create-assignee"
+                  class="btn-clear-assignee"
+                  (click)="onClearAssignee($event)"
+                  title="Remove assignee"
+                  aria-label="Remove assignee"
+                >
+                  ✕
+                </button>
+              </div>
+            } @else {
+              <button
+                type="button"
+                id="btn-create-assignee"
+                class="assignee-picker-trigger is-unassigned"
+                (click)="onOpenAssigneeDialog($event)"
+              >
+                <svg
+                  class="unassigned-icon"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span class="unassigned-label">Unassigned</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="create-tags">Tags</label>
+        <div class="azure-tags-input-container" (click)="focusTagInput(tagInputEl)">
+          @for (tag of createdTags; track tag) {
+            <span class="tag-fourangle">
+              <span class="tag-text">{{ tag }}</span>
+              <button
+                type="button"
+                class="btn-remove-tag"
+                (click)="removeCreatedTag(tag, $event)"
+                [attr.aria-label]="'Remove tag ' + tag"
+              >
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </span>
+          }
+          <input
+            #tagInputEl
+            id="create-tags"
+            type="text"
+            class="tag-inline-input"
+            [value]="tagInputText"
+            (input)="onTagInput($any($event.target).value, tagInputEl)"
+            (keydown)="onTagKeyDown($event, tagInputEl)"
+            (blur)="onTagBlur(tagInputEl)"
+            [placeholder]="
+              createdTags.length === 0 ? 'e.g. Security, Auth, Gateway' : 'Add another tag...'
+            "
+          />
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="create-description">Description</label>
+        <textarea
+          id="create-description"
+          rows="3"
+          formControlName="description"
+          placeholder="Work item description and acceptance criteria..."
+          class="azure-textarea"
+        ></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="onClose()"
+          [disabled]="isSubmitting"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="createTaskForm.invalid || isSubmitting"
+        >
+          @if (isSubmitting) {
+            <span class="btn-spinner"></span>
+            <span>Saving...</span>
+          } @else {
+            <span>Save Item</span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+}
