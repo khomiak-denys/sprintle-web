@@ -1,9 +1,10 @@
-<div class="user-menu-container">
+<div class="user-menu-container" [ngClass]="'theme-' + theme">
   <button
     type="button"
     class="avatar-btn"
     (click)="onToggle()"
     [class.active]="isOpen"
+    [ngClass]="'avatar-btn-' + theme"
     aria-label="User account menu"
     aria-haspopup="true"
     [attr.aria-expanded]="isOpen"

@@ -1,8 +1,9 @@
 .brand-logo-container {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem;
   user-select: none;
+  color: inherit;
 
   svg {
     display: block;
@@ -10,9 +11,10 @@
   }
 
   .header-title {
-    font-size: 15px;
+    font-size: inherit;
     font-weight: 600;
-    color: var(--text-color, #ffffff);
-    letter-spacing: -0.2px;
+    color: inherit;
+    letter-spacing: inherit;
+    line-height: 1;
   }
 }

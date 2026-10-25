@@ -6,9 +6,6 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: none;
-    background: #0078d4;
-    color: #ffffff;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.875rem;
@@ -19,15 +16,40 @@
       background-color 0.15s ease,
       box-shadow 0.15s ease;
 
-    &:hover {
-      background-color: #106ebe;
+    // Theme: blue (workspaces header with #0078d4 background)
+    &.avatar-btn-blue {
+      background-color: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #ffffff;
+
+      &:hover,
+      &.active {
+        background-color: rgba(255, 255, 255, 0.4);
+      }
+
+      &:focus-visible {
+        box-shadow:
+          0 0 0 2px #0078d4,
+          0 0 0 4px #ffffff;
+      }
     }
 
-    &:focus-visible,
-    &.active {
-      box-shadow:
-        0 0 0 2px #ffffff,
-        0 0 0 4px #0078d4;
+    // Theme: light (dashboard / admin white header)
+    &.avatar-btn-light {
+      background: #0078d4;
+      border: none;
+      color: #ffffff;
+
+      &:hover {
+        background-color: #106ebe;
+      }
+
+      &:focus-visible,
+      &.active {
+        box-shadow:
+          0 0 0 2px #ffffff,
+          0 0 0 4px #0078d4;
+      }
     }
   }
 

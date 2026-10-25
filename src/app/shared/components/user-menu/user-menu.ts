@@ -23,6 +23,7 @@ export class UserMenuComponent {
   @Input() isOpen = false;
   @Input() isAdmin = false;
   @Input() showAdminOption = true;
+  @Input() theme: 'blue' | 'light' = 'blue';
 
   @Output() readonly toggle = new EventEmitter<void>();
   @Output() readonly close = new EventEmitter<void>();
