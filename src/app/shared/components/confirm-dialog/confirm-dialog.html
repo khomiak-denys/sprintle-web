@@ -1,0 +1,80 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onClose()" [id]="overlayId"></div>
+  <div
+    class="azure-modal danger-modal"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="titleId"
+    [id]="modalId"
+  >
+    <div class="modal-header">
+      <h3 class="modal-title modal-danger-title" [id]="titleId">{{ title }}</h3>
+      <button
+        type="button"
+        class="modal-close-btn"
+        (click)="onClose()"
+        aria-label="Close"
+        [disabled]="isProcessing"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body-content">
+      <div class="danger-warning-banner">
+        <app-icon name="alert-triangle" [size]="20" style="color: #d13438"></app-icon>
+        <div>
+          @if (warningHeading) {
+            <strong>{{ warningHeading }}</strong>
+          }
+          <ng-content select="[warning-body], p, div"></ng-content>
+        </div>
+      </div>
+
+      @if (requireConfirmationText !== null && requireConfirmationText !== undefined) {
+        <div class="confirmation-prompt-group">
+          <label [for]="confirmationInputId" class="confirm-label">
+            {{ confirmationLabel }}
+            <code>{{ requireConfirmationText }}</code> below:
+          </label>
+          <input
+            [id]="confirmationInputId"
+            type="text"
+            class="azure-input"
+            [value]="confirmationInput"
+            (input)="onInputChange($any($event.target).value)"
+            [placeholder]="confirmationPlaceholder"
+            autocomplete="off"
+            [disabled]="isProcessing"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="onClose()"
+        [disabled]="isProcessing"
+        [id]="cancelButtonId"
+      >
+        {{ cancelButtonText }}
+      </button>
+      <button
+        type="button"
+        class="btn-danger"
+        [disabled]="!isConfirmEnabled()"
+        (click)="onConfirm()"
+        [id]="confirmButtonId"
+      >
+        @if (isProcessing) {
+          <span class="btn-spinner"></span>
+          <span>{{ processingText }}</span>
+        } @else {
+          <span>{{ confirmButtonText }}</span>
+        }
+      </button>
+    </div>
+  </div>
+}

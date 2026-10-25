@@ -490,148 +490,58 @@
 
       <!-- 5. USER DELETION WITH USERNAME CONFIRMATION MODAL -->
       @if (state.isDeleteModalOpen && state.userToDelete; as targetUser) {
-        <div class="modal-overlay" (click)="closeDeleteModal()" id="delete-modal-overlay"></div>
-        <div
-          class="azure-modal danger-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-modal-title"
-          id="delete-user-modal"
+        <app-confirm-dialog
+          [isOpen]="state.isDeleteModalOpen"
+          title="Delete User Account"
+          warningHeading="Warning: Permanent Deletion"
+          confirmButtonText="Delete User"
+          processingText="Deleting..."
+          [isProcessing]="state.isDeletingUser"
+          [requireConfirmationText]="targetUser.userName"
+          confirmationLabel="To confirm, please type the exact username"
+          confirmationPlaceholder="Type username to confirm"
+          [confirmationInput]="state.confirmDeleteInput"
+          modalId="delete-user-modal"
+          overlayId="delete-modal-overlay"
+          titleId="delete-modal-title"
+          confirmButtonId="btn-confirm-delete-user"
+          cancelButtonId="btn-cancel-delete"
+          confirmationInputId="input-confirm-username"
+          (confirmationInputChange)="onConfirmDeleteInputChange($event)"
+          (close)="closeDeleteModal()"
+          (confirm)="onConfirmDeleteUser()"
         >
-          <div class="modal-header">
-            <h3 class="modal-title modal-danger-title" id="delete-modal-title">
-              Delete User Account
-            </h3>
-            <button
-              type="button"
-              class="modal-close-btn"
-              (click)="closeDeleteModal()"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div class="modal-body-content">
-            <div class="danger-warning-banner">
-              <app-icon name="alert-triangle" [size]="20" style="color: #d13438"></app-icon>
-              <div>
-                <strong>Warning: Permanent Deletion</strong>
-                <p>
-                  You are about to permanently delete user
-                  <strong>{{ targetUser.fullName || targetUser.userName }}</strong> (&#64;{{
-                    targetUser.userName
-                  }}). This action cannot be reversed.
-                </p>
-              </div>
-            </div>
-
-            <div class="confirmation-prompt-group">
-              <label for="input-confirm-username" class="confirm-label">
-                To confirm, please type the exact username
-                <code>{{ targetUser.userName }}</code> below:
-              </label>
-              <input
-                id="input-confirm-username"
-                type="text"
-                class="azure-input"
-                [value]="state.confirmDeleteInput"
-                (input)="onConfirmDeleteInputChange($any($event.target).value)"
-                placeholder="Type username to confirm"
-                autocomplete="off"
-              />
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn-secondary"
-              (click)="closeDeleteModal()"
-              [disabled]="state.isDeletingUser"
-              id="btn-cancel-delete"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="btn-danger"
-              [disabled]="!isDeleteButtonEnabled()"
-              (click)="onConfirmDeleteUser()"
-              id="btn-confirm-delete-user"
-            >
-              @if (state.isDeletingUser) {
-                <span class="btn-spinner"></span>
-                <span>Deleting...</span>
-              } @else {
-                <span>Delete User</span>
-              }
-            </button>
-          </div>
-        </div>
+          <p warning-body>
+            You are about to permanently delete user
+            <strong>{{ targetUser.fullName || targetUser.userName }}</strong> (&#64;{{
+              targetUser.userName
+            }}). This action cannot be reversed.
+          </p>
+        </app-confirm-dialog>
       }
 
       <!-- 7. WORKSPACE DELETE CONFIRMATION MODAL -->
       @if (state.isDeleteWorkspaceModalOpen && state.workspaceToDelete; as targetWs) {
-        <div
-          class="modal-overlay"
-          (click)="closeDeleteWorkspaceModal()"
-          id="delete-workspace-overlay"
-        ></div>
-        <div
-          class="azure-modal danger-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-ws-title"
-          id="delete-workspace-modal"
+        <app-confirm-dialog
+          [isOpen]="state.isDeleteWorkspaceModalOpen"
+          title="Delete Workspace"
+          warningHeading="Warning: Permanent Workspace Deletion"
+          confirmButtonText="Delete Workspace"
+          modalId="delete-workspace-modal"
+          overlayId="delete-workspace-overlay"
+          titleId="delete-ws-title"
+          confirmButtonId="btn-confirm-delete-ws"
+          cancelButtonId="btn-cancel-delete-ws"
+          (close)="closeDeleteWorkspaceModal()"
+          (confirm)="confirmDeleteWorkspace()"
         >
-          <div class="modal-header">
-            <h3 class="modal-title modal-danger-title" id="delete-ws-title">Delete Workspace</h3>
-            <button
-              type="button"
-              class="modal-close-btn"
-              (click)="closeDeleteWorkspaceModal()"
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div class="modal-body-content">
-            <div class="danger-warning-banner">
-              <app-icon name="alert-triangle" [size]="20" style="color: #d13438"></app-icon>
-              <div>
-                <strong>Warning: Permanent Workspace Deletion</strong>
-                <p>
-                  You are about to delete workspace <strong>{{ targetWs.name }}</strong> (<code>{{
-                    targetWs.code
-                  }}</code
-                  >). All team member assignments and task associations in this workspace will be
-                  removed.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn-secondary"
-              (click)="closeDeleteWorkspaceModal()"
-              id="btn-cancel-delete-ws"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="btn-danger"
-              (click)="confirmDeleteWorkspace()"
-              id="btn-confirm-delete-ws"
-            >
-              Delete Workspace
-            </button>
-          </div>
-        </div>
+          <p warning-body>
+            You are about to delete workspace <strong>{{ targetWs.name }}</strong> (<code>{{
+              targetWs.code
+            }}</code
+            >). All team member assignments and task associations in this workspace will be removed.
+          </p>
+        </app-confirm-dialog>
       }
     }
   </main>

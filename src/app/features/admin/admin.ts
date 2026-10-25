@@ -26,6 +26,7 @@ import { ProfileComponent } from '../profile/profile';
 import { IconComponent } from '../../shared/components/icon/icon';
 import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo';
 import { UserMenuComponent } from '../../shared/components/user-menu/user-menu';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 
 export type AdminTab = 'users' | 'tasks' | 'workspaces';
 
@@ -146,6 +147,7 @@ const initialAdminState: AdminState = {
     IconComponent,
     BrandLogoComponent,
     UserMenuComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
