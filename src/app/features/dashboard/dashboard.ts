@@ -47,6 +47,15 @@ import {
 } from '../../shared/components/assign-user-dialog/assign-user-dialog';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { TooltipComponent } from '../../shared/components/tooltip/tooltip.component';
+import {
+  CreateTaskModalComponent,
+  CreateTaskPayload,
+} from '../../shared/components/create-task-modal/create-task-modal.component';
+import {
+  LogTimeModalComponent,
+  LogTimePayload,
+} from '../../shared/components/log-time-modal/log-time-modal.component';
+import { RemoveMemberModalComponent } from '../../shared/components/remove-member-modal/remove-member-modal.component';
 
 export type DashboardTab = 'board' | 'list' | 'statistics' | 'settings';
 
@@ -135,7 +144,6 @@ export interface DashboardState {
   // Remove Member Confirmation
   readonly isRemoveMemberModalOpen: boolean;
   readonly memberToRemove: WorkspaceMemberResult | null;
-  readonly removeMemberConfirmInput: string;
   readonly isRemovingMember: boolean;
 }
 
@@ -161,6 +169,9 @@ export interface KpiSummary {
     AssignUserDialogComponent,
     SkeletonComponent,
     TooltipComponent,
+    CreateTaskModalComponent,
+    LogTimeModalComponent,
+    RemoveMemberModalComponent,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -220,7 +231,6 @@ export class DashboardComponent implements OnInit {
     expandedSettingsSections: { general: true, members: true },
     isRemoveMemberModalOpen: false,
     memberToRemove: null,
-    removeMemberConfirmInput: '',
     isRemovingMember: false,
   });
 
@@ -300,8 +310,6 @@ export class DashboardComponent implements OnInit {
     return this.authService.isAdmin() ? '/admin' : '/workspaces';
   }
 
-  protected readonly createTaskForm: FormGroup;
-  protected readonly logTimeForm: FormGroup;
   protected readonly workspaceSettingsForm: FormGroup;
   private readonly settingsMembersSearchSubject = new Subject<string>();
 
@@ -323,10 +331,6 @@ export class DashboardComponent implements OnInit {
     return !ws.role;
   }
 
-  get isRemoveMemberConfirmed(): boolean {
-    return this.isRemoveMemberButtonEnabled();
-  }
-
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(
@@ -337,21 +341,6 @@ export class DashboardComponent implements OnInit {
     private readonly elementRef: ElementRef,
     private readonly router: Router,
   ) {
-    this.createTaskForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(3)]],
-      description: [''],
-      priority: ['Medium' as Priority, [Validators.required]],
-      deadline: [''],
-      tags: [''],
-      assigneeId: [null as string | null],
-    });
-
-    this.logTimeForm = this.fb.group({
-      minutesSpent: [30, [Validators.required, Validators.min(1)]],
-      description: [''],
-      loggedDate: [new Date().toISOString().substring(0, 10), [Validators.required]],
-    });
-
     this.workspaceSettingsForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       description: ['', [Validators.maxLength(500)]],
@@ -742,7 +731,6 @@ export class DashboardComponent implements OnInit {
   protected onUserSelectedForAssignment(user: AssignableMember): void {
     if (this.snapshot.isCreateModalOpen && !this.snapshot.taskToAssign) {
       this.selectedCreateAssignee = user;
-      this.createTaskForm.patchValue({ assigneeId: user.id });
       this.onCloseAssignUserDialog();
       return;
     }
@@ -873,78 +861,7 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  protected createdTags: string[] = [];
-  protected tagInputText = '';
   protected selectedCreateAssignee: AssignableMember | null = null;
-
-  protected focusTagInput(inputEl: HTMLInputElement): void {
-    inputEl.focus();
-  }
-
-  protected onTagInput(value: string, inputEl?: HTMLInputElement): void {
-    if (value.includes(',')) {
-      const parts = value.split(',');
-      for (const part of parts) {
-        this.addCreatedTag(part);
-      }
-      this.tagInputText = '';
-      if (inputEl) inputEl.value = '';
-    } else if (value.includes('  ')) {
-      const parts = value.split('  ');
-      for (let i = 0; i < parts.length - 1; i++) {
-        if (parts[i].trim()) {
-          this.addCreatedTag(parts[i]);
-        }
-      }
-      this.tagInputText = parts[parts.length - 1].trimStart();
-      if (inputEl) inputEl.value = this.tagInputText;
-    } else {
-      this.tagInputText = value;
-    }
-  }
-
-  protected onTagKeyDown(event: KeyboardEvent, inputEl?: HTMLInputElement): void {
-    const el = inputEl || (event.target as HTMLInputElement | null);
-    if (event.key === 'Enter' || event.key === ',') {
-      event.preventDefault();
-      if (this.tagInputText.trim()) {
-        this.addCreatedTag(this.tagInputText);
-        this.tagInputText = '';
-        if (el) el.value = '';
-      }
-    } else if (event.key === ' ' || event.code === 'Space') {
-      if (this.tagInputText.endsWith(' ') && this.tagInputText.trim()) {
-        event.preventDefault();
-        this.addCreatedTag(this.tagInputText);
-        this.tagInputText = '';
-        if (el) el.value = '';
-      }
-    } else if (event.key === 'Backspace' && !this.tagInputText && this.createdTags.length > 0) {
-      this.removeCreatedTag(this.createdTags[this.createdTags.length - 1]);
-    }
-  }
-
-  protected onTagBlur(inputEl?: HTMLInputElement): void {
-    if (this.tagInputText.trim()) {
-      this.addCreatedTag(this.tagInputText);
-      this.tagInputText = '';
-      if (inputEl) inputEl.value = '';
-    }
-  }
-
-  protected addCreatedTag(tag: string): void {
-    const trimmed = tag.trim();
-    if (trimmed && !this.createdTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
-      this.createdTags = [...this.createdTags, trimmed];
-      this.createTaskForm.get('tags')?.setValue(this.createdTags.join(', '));
-    }
-  }
-
-  protected removeCreatedTag(tag: string, event?: Event): void {
-    event?.stopPropagation();
-    this.createdTags = this.createdTags.filter((t) => t !== tag);
-    this.createTaskForm.get('tags')?.setValue(this.createdTags.join(', '));
-  }
 
   protected onOpenCreateAssigneeDialog(event: MouseEvent): void {
     event.stopPropagation();
@@ -968,33 +885,14 @@ export class DashboardComponent implements OnInit {
   protected onClearCreateAssignee(event?: MouseEvent): void {
     event?.stopPropagation();
     this.selectedCreateAssignee = null;
-    this.createTaskForm.patchValue({ assigneeId: null });
-  }
-
-  protected getMemberInitial(member: AssignableMember | null): string {
-    if (!member) return '?';
-    const name = member.fullName || member.userName || '?';
-    return name.trim().charAt(0).toUpperCase() || '?';
   }
 
   protected openCreateModal(): void {
-    this.createdTags = [];
-    this.tagInputText = '';
     this.selectedCreateAssignee = null;
-    this.createTaskForm.reset({
-      title: '',
-      priority: 'Medium',
-      deadline: '',
-      description: '',
-      tags: '',
-      assigneeId: null,
-    });
     this.updateState({ isCreateModalOpen: true });
   }
 
   protected closeCreateModal(): void {
-    this.createdTags = [];
-    this.tagInputText = '';
     this.selectedCreateAssignee = null;
     if (this.snapshot.isAssignUserDialogOpen && !this.snapshot.taskToAssign) {
       this.onCloseAssignUserDialog();
@@ -1002,26 +900,7 @@ export class DashboardComponent implements OnInit {
     this.updateState({ isCreateModalOpen: false });
   }
 
-  protected onCreateTaskSubmit(): void {
-    if (this.tagInputText.trim()) {
-      this.addCreatedTag(this.tagInputText);
-      this.tagInputText = '';
-    }
-
-    if (this.createTaskForm.invalid) {
-      this.createTaskForm.markAllAsTouched();
-      return;
-    }
-
-    const val = this.createTaskForm.value;
-    const formTagsArray = val.tags
-      ? val.tags
-          .split(',')
-          .map((t: string) => t.trim())
-          .filter((t: string) => !!t)
-      : [];
-    const tagsArray = this.createdTags.length > 0 ? [...this.createdTags] : formTagsArray;
-
+  protected onCreateTaskSubmit(payload: CreateTaskPayload): void {
     const activeWorkspaceId =
       this.snapshot.selectedWorkspace?.id || this.workspaceService.currentWorkspace?.id || '';
 
@@ -1032,12 +911,12 @@ export class DashboardComponent implements OnInit {
 
     const request: CreateTaskRequest = {
       workspaceId: activeWorkspaceId,
-      title: val.title.trim(),
-      description: val.description?.trim() || null,
-      priority: val.priority,
-      deadline: val.deadline ? new Date(val.deadline).toISOString() : null,
-      assigneeId: val.assigneeId || null,
-      tags: tagsArray,
+      title: payload.title.trim(),
+      description: payload.description?.trim() || null,
+      priority: payload.priority,
+      deadline: payload.deadline,
+      assigneeId: payload.assigneeId || null,
+      tags: payload.tags,
     };
 
     this.taskService
@@ -1108,17 +987,7 @@ export class DashboardComponent implements OnInit {
     { minutes: 480, label: '8h', description: '8 hours' },
   ];
 
-  protected setTimePreset(minutes: number): void {
-    this.logTimeForm.patchValue({ minutesSpent: minutes });
-    this.logTimeForm.get('minutesSpent')?.markAsDirty();
-  }
-
   protected openLogTimeModal(task: TaskResult): void {
-    this.logTimeForm.reset({
-      minutesSpent: 60,
-      description: '',
-      loggedDate: new Date().toISOString().substring(0, 10),
-    });
     this.updateState({ isLogTimeModalOpen: true, taskForTimeLog: task });
   }
 
@@ -1126,18 +995,16 @@ export class DashboardComponent implements OnInit {
     this.updateState({ isLogTimeModalOpen: false, taskForTimeLog: null });
   }
 
-  protected onLogTimeSubmit(): void {
-    if (this.logTimeForm.invalid || !this.snapshot.taskForTimeLog) {
-      this.logTimeForm.markAllAsTouched();
+  protected onLogTimeSubmit(payload: LogTimePayload): void {
+    if (!this.snapshot.taskForTimeLog) {
       return;
     }
 
     const taskId = this.snapshot.taskForTimeLog.id;
-    const val = this.logTimeForm.value;
     const req: LogTimeRequest = {
-      minutesSpent: Number(val.minutesSpent),
-      description: val.description?.trim() || null,
-      loggedDate: val.loggedDate,
+      minutesSpent: payload.minutesSpent,
+      description: payload.description,
+      loggedDate: payload.loggedDate,
     };
 
     this.taskService
@@ -1418,7 +1285,6 @@ export class DashboardComponent implements OnInit {
     this.updateState({
       isRemoveMemberModalOpen: true,
       memberToRemove: member,
-      removeMemberConfirmInput: '',
       isRemovingMember: false,
     });
   }
@@ -1428,30 +1294,16 @@ export class DashboardComponent implements OnInit {
     this.updateState({
       isRemoveMemberModalOpen: false,
       memberToRemove: null,
-      removeMemberConfirmInput: '',
       isRemovingMember: false,
     });
   }
 
-  protected onRemoveMemberConfirmInputChange(value: string): void {
-    this.updateState({ removeMemberConfirmInput: value });
-  }
-
-  protected isRemoveMemberButtonEnabled(): boolean {
-    const target = this.snapshot.memberToRemove;
-    if (!target) return false;
-    return (
-      this.snapshot.removeMemberConfirmInput.trim() === target.userName.trim() &&
-      !this.snapshot.isRemovingMember
-    );
-  }
-
-  protected confirmRemoveMember(): void {
-    const member = this.snapshot.memberToRemove;
+  protected confirmRemoveMember(member?: WorkspaceMemberResult): void {
+    const targetMember = member || this.snapshot.memberToRemove;
     const ws = this.snapshot.selectedWorkspace;
-    if (!member || !ws?.id || !this.isRemoveMemberButtonEnabled()) return;
+    if (!targetMember || !ws?.id) return;
 
-    const memberUserId = member.userId || member.id;
+    const memberUserId = targetMember.userId || targetMember.id;
     this.updateState({ isRemovingMember: true });
 
     this.workspaceService
@@ -1459,7 +1311,7 @@ export class DashboardComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.notificationService.success(`Removed @${member.userName} from workspace.`);
+          this.notificationService.success(`Removed @${targetMember.userName} from workspace.`);
           if (this.snapshot.settingsMembers.length === 1 && this.snapshot.settingsMembersPage > 1) {
             this.updateState({
               settingsMembersPage: this.snapshot.settingsMembersPage - 1,
