@@ -56,6 +56,10 @@ import {
   LogTimePayload,
 } from '../../shared/components/log-time-modal/log-time-modal.component';
 import { RemoveMemberModalComponent } from '../../shared/components/remove-member-modal/remove-member-modal.component';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { ExpandableItemComponent } from '../../shared/components/expandable-item/expandable-item';
+import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo';
+import { UserMenuComponent } from '../../shared/components/user-menu/user-menu';
 
 export type DashboardTab = 'board' | 'list' | 'statistics' | 'settings';
 
@@ -172,6 +176,10 @@ export interface KpiSummary {
     CreateTaskModalComponent,
     LogTimeModalComponent,
     RemoveMemberModalComponent,
+    IconComponent,
+    ExpandableItemComponent,
+    BrandLogoComponent,
+    UserMenuComponent,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

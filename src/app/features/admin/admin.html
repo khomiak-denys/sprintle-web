@@ -3,34 +3,7 @@
   <header class="admin-header">
     <div class="header-left">
       <div class="azure-brand">
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M12 2L2 7V10C2 16.5 6.84 22.74 12 24C17.16 22.74 22 16.5 22 10V7L12 2Z"
-            fill="url(#admin-header-shield)"
-            opacity="0.95"
-          />
-          <path
-            d="M9 12L11 14L15 10"
-            stroke="white"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <defs>
-            <linearGradient id="admin-header-shield" x1="2" y1="2" x2="22" y2="24">
-              <stop stop-color="#0078D4" />
-              <stop offset="1" stop-color="#00BCF2" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <span class="header-title">Sprintle</span>
+        <app-brand-logo [size]="22"></app-brand-logo>
       </div>
       <nav class="header-breadcrumb" aria-label="Breadcrumb">
         <span class="breadcrumb-separator">/</span>
@@ -42,71 +15,16 @@
 
     <div class="header-right">
       @if (state$ | async; as state) {
-        <div class="user-menu-container">
-          <button
-            type="button"
-            class="avatar-btn"
-            (click)="toggleDropdown()"
-            [class.active]="state.dropdownOpen"
-            aria-label="User account menu"
-            aria-haspopup="true"
-            [attr.aria-expanded]="state.dropdownOpen"
-            id="user-avatar-btn"
-          >
-            <span class="avatar-letter">{{ state.userInitial }}</span>
-          </button>
-
-          @if (state.dropdownOpen) {
-            <div class="user-dropdown" role="menu" id="user-dropdown-menu">
-              <div class="dropdown-items">
-                <button
-                  type="button"
-                  class="dropdown-item"
-                  (click)="onProfile()"
-                  role="menuitem"
-                  id="menu-item-profile"
-                >
-                  <svg
-                    class="dropdown-icon"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                  <span>Profile</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="dropdown-item dropdown-item-danger"
-                  (click)="onLogout()"
-                  role="menuitem"
-                  id="menu-item-logout"
-                >
-                  <svg
-                    class="dropdown-icon"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                  </svg>
-                  <span>Sign out</span>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
+        <app-user-menu
+          [userInitial]="state.userInitial"
+          [isOpen]="state.dropdownOpen"
+          [isAdmin]="true"
+          [showAdminOption]="false"
+          (toggle)="toggleDropdown()"
+          (close)="closeDropdown()"
+          (profile)="onProfile()"
+          (logout)="onLogout()"
+        ></app-user-menu>
       }
     </div>
   </header>
@@ -125,19 +43,7 @@
             [attr.aria-selected]="state.activeTab === 'users'"
             id="admin-tab-users"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
+            <app-icon name="users" [size]="14"></app-icon>
             <span>Users Directory</span>
             <span class="tab-badge">{{ state.usersTotalCount }}</span>
           </button>
@@ -151,17 +57,7 @@
             [attr.aria-selected]="state.activeTab === 'workspaces'"
             id="admin-tab-workspaces"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-            </svg>
+            <app-icon name="workspace" [size]="14"></app-icon>
             <span>Workspaces</span>
             <span class="tab-badge">{{ state.workspaces.length }}</span>
           </button>
@@ -179,18 +75,7 @@
           <!-- Filter & Controls Toolbar -->
           <div class="toolbar-row">
             <div class="search-box filter-search">
-              <svg
-                class="search-icon"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+              <app-icon name="search" [size]="14" class="search-icon"></app-icon>
               <input
                 type="text"
                 placeholder="Search users by name, username, or email..."
@@ -207,17 +92,7 @@
               [disabled]="state.usersLoading"
               id="btn-refresh-users"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M23 4v6h-6"></path>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
+              <app-icon name="refresh-cw" [size]="13"></app-icon>
               <span>Refresh</span>
             </button>
           </div>
@@ -352,18 +227,7 @@
           <!-- Filter & Controls Toolbar -->
           <div class="toolbar-row">
             <div class="search-box filter-search">
-              <svg
-                class="search-icon"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+              <app-icon name="search" [size]="14" class="search-icon"></app-icon>
               <input
                 type="text"
                 placeholder="Search workspaces by name, code, or description..."
@@ -380,17 +244,7 @@
               [disabled]="state.workspacesLoading"
               id="btn-refresh-workspaces"
             >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M23 4v6h-6"></path>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-              </svg>
+              <app-icon name="refresh-cw" [size]="13"></app-icon>
               <span>Refresh</span>
             </button>
           </div>
@@ -659,20 +513,7 @@
 
           <div class="modal-body-content">
             <div class="danger-warning-banner">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#d13438"
-                stroke-width="2"
-              >
-                <path
-                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-                ></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
+              <app-icon name="alert-triangle" [size]="20" style="color: #d13438"></app-icon>
               <div>
                 <strong>Warning: Permanent Deletion</strong>
                 <p>
@@ -757,20 +598,7 @@
 
           <div class="modal-body-content">
             <div class="danger-warning-banner">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#d13438"
-                stroke-width="2"
-              >
-                <path
-                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-                ></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
+              <app-icon name="alert-triangle" [size]="20" style="color: #d13438"></app-icon>
               <div>
                 <strong>Warning: Permanent Workspace Deletion</strong>
                 <p>

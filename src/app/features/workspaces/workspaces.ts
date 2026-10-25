@@ -31,6 +31,9 @@ import {
   CreateWorkspaceModalComponent,
   CreateWorkspacePayload,
 } from '../../shared/components/create-workspace-modal/create-workspace-modal.component';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo';
+import { UserMenuComponent } from '../../shared/components/user-menu/user-menu';
 
 export interface WorkspacesState {
   readonly searchQuery: string;
@@ -59,6 +62,9 @@ const initialState: WorkspacesState = {
     ReactiveFormsModule,
     SkeletonComponent,
     CreateWorkspaceModalComponent,
+    IconComponent,
+    BrandLogoComponent,
+    UserMenuComponent,
   ],
   templateUrl: './workspaces.html',
   styleUrl: './workspaces.scss',
@@ -156,6 +162,10 @@ export class WorkspacesComponent implements OnInit {
 
   protected toggleDropdown(): void {
     this.updateState({ dropdownOpen: !this.stateSubject.value.dropdownOpen });
+  }
+
+  protected closeDropdown(): void {
+    this.updateState({ dropdownOpen: false });
   }
 
   // ==========================================

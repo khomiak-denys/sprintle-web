@@ -1,0 +1,9 @@
+@if (iconDef; as def) {
+  <svg
+    [attr.viewBox]="def.viewBox || '0 0 24 24'"
+    [attr.width]="size"
+    [attr.height]="size"
+    [attr.stroke-width]="strokeWidth"
+    [innerHTML]="safeSvgBody"
+  ></svg>
+}

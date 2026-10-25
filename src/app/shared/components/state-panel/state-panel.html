@@ -1,0 +1,21 @@
+<div class="state-panel" [ngClass]="'state-' + type">
+  @if (type === 'loading') {
+    <div class="spinner" aria-hidden="true"></div>
+  } @else if (icon) {
+    <div class="state-icon" aria-hidden="true">
+      <app-icon [name]="icon" [size]="type === 'error' ? 48 : 32"></app-icon>
+    </div>
+  }
+
+  @if (title) {
+    <h3 class="state-title">{{ title }}</h3>
+  }
+
+  @if (message) {
+    <p class="state-message">{{ message }}</p>
+  }
+
+  <div class="state-content">
+    <ng-content></ng-content>
+  </div>
+</div>

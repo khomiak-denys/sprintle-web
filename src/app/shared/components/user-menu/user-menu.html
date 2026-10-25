@@ -1,0 +1,55 @@
+<div class="user-menu-container">
+  <button
+    type="button"
+    class="avatar-btn"
+    (click)="onToggle()"
+    [class.active]="isOpen"
+    aria-label="User account menu"
+    aria-haspopup="true"
+    [attr.aria-expanded]="isOpen"
+    id="user-avatar-btn"
+  >
+    <span class="avatar-letter">{{ userInitial }}</span>
+  </button>
+
+  @if (isOpen) {
+    <div class="user-dropdown" role="menu" id="user-dropdown-menu">
+      <div class="dropdown-items">
+        <button
+          type="button"
+          class="dropdown-item"
+          (click)="onProfileClick()"
+          role="menuitem"
+          id="menu-item-profile"
+        >
+          <app-icon name="user" [size]="16" class="dropdown-icon"></app-icon>
+          <span>Profile</span>
+        </button>
+
+        @if (showAdminOption && isAdmin) {
+          <button
+            type="button"
+            class="dropdown-item"
+            (click)="onAdminClick()"
+            role="menuitem"
+            id="menu-item-admin"
+          >
+            <app-icon name="admin" [size]="16" class="dropdown-icon"></app-icon>
+            <span>Admin Console</span>
+          </button>
+        }
+
+        <button
+          type="button"
+          class="dropdown-item dropdown-item-danger"
+          (click)="onLogoutClick()"
+          role="menuitem"
+          id="menu-item-logout"
+        >
+          <app-icon name="logout" [size]="16" class="dropdown-icon"></app-icon>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -29,6 +29,9 @@ import { NavigationHistoryService } from '../../core/services/navigation-history
 import { UserProfile } from '../../core/models/user.models';
 import { AutoTrimDirective } from '../../shared/directives/auto-trim.directive';
 import { trimFormGroup } from '../../shared/utils/form.utils';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { ExpandableItemComponent } from '../../shared/components/expandable-item/expandable-item';
+import { StatePanelComponent } from '../../shared/components/state-panel/state-panel';
 
 export interface ProfileState {
   readonly loading: boolean;
@@ -81,7 +84,15 @@ const initialProfileState: ProfileState = {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, AutoTrimDirective],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    AutoTrimDirective,
+    IconComponent,
+    ExpandableItemComponent,
+    StatePanelComponent,
+  ],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

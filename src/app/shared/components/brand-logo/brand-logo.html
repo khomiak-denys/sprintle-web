@@ -1,0 +1,32 @@
+<div class="brand-logo-container">
+  <svg
+    [attr.width]="size"
+    [attr.height]="size"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M12 2L2 7V10C2 16.5 6.84 22.74 12 24C17.16 22.74 22 16.5 22 10V7L12 2Z"
+      fill="url(#sprintle-shield-gradient)"
+      opacity="0.95"
+    />
+    <path
+      d="M9 12L11 14L15 10"
+      stroke="white"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <defs>
+      <linearGradient id="sprintle-shield-gradient" x1="2" y1="2" x2="22" y2="24">
+        <stop stop-color="#0078D4" />
+        <stop offset="1" stop-color="#00BCF2" />
+      </linearGradient>
+    </defs>
+  </svg>
+  @if (showTitle) {
+    <span class="header-title">{{ title }}</span>
+  }
+</div>

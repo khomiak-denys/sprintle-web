@@ -1,0 +1,18 @@
+.brand-logo-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color, #ffffff);
+    letter-spacing: -0.2px;
+  }
+}
