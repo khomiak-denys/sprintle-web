@@ -10,6 +10,8 @@ import { TaskService } from '../../core/services/task.service';
 import { TaskResult, TaskDetailsResult } from '../../core/models/task.models';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { Workspace, WorkspaceMemberResult } from '../../core/models/workspace.models';
+import { CreateTaskPayload } from '../../shared/components/create-task-modal/create-task-modal.component';
+import { LogTimePayload } from '../../shared/components/log-time-modal/log-time-modal.component';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -332,11 +334,10 @@ describe('DashboardComponent', () => {
     expect(component.snapshot.selectedTask).toBeNull();
   });
 
-  it('openCreateModal_Should_ResetFormAndOpenModal_When_Called', () => {
+  it('openCreateModal_Should_OpenModal_When_Called', () => {
     component['openCreateModal']();
 
     expect(component.snapshot.isCreateModalOpen).toBeTrue();
-    expect(component['createTaskForm'].get('title')?.value).toBe('');
 
     component['closeCreateModal']();
     expect(component.snapshot.isCreateModalOpen).toBeFalse();
@@ -352,130 +353,28 @@ describe('DashboardComponent', () => {
     expect(component.snapshot.isCreateModalOpen).toBeTrue();
   });
 
-  it('onCreateTaskSubmit_Should_CreateTaskAndReload_When_FormIsValid', () => {
+  it('onCreateTaskSubmit_Should_CreateTaskAndReload_When_PayloadIsValid', () => {
     component['openCreateModal']();
-    component['createTaskForm'].setValue({
+    const payload: CreateTaskPayload = {
       title: 'New Integration Test',
       description: 'Write integration test with WebApplicationFactory',
       priority: 'High',
       deadline: '2026-10-15',
-      tags: 'Test, Backend',
+      tags: ['Test', 'Backend'],
       assigneeId: null,
-    });
+    };
 
-    component['onCreateTaskSubmit']();
+    component['onCreateTaskSubmit'](payload);
 
     expect(taskServiceSpy.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
         workspaceId: 'ws-arch-core',
         title: 'New Integration Test',
+        tags: ['Test', 'Backend'],
       }),
     );
     expect(notificationServiceSpy.success).toHaveBeenCalledWith('Task created successfully.');
     expect(component.snapshot.isCreateModalOpen).toBeFalse();
-  });
-
-  it('onCreateTaskSubmit_Should_MarkTouchedAndNotSubmit_When_Invalid', () => {
-    component['openCreateModal']();
-    component['createTaskForm'].setValue({
-      title: '',
-      description: '',
-      priority: 'Low',
-      deadline: '',
-      tags: '',
-      assigneeId: null,
-    });
-
-    component['onCreateTaskSubmit']();
-
-    expect(taskServiceSpy.create).not.toHaveBeenCalled();
-    expect(component['createTaskForm'].get('title')?.touched).toBeTrue();
-  });
-
-  it('Tags_Should_AddChip_When_UserPressesEnter', () => {
-    component['openCreateModal']();
-    component['tagInputText'] = 'Security';
-    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter' });
-    component['onTagKeyDown'](enterEvent);
-
-    expect(component['createdTags']).toContain('Security');
-    expect(component['tagInputText']).toBe('');
-    expect(component['createTaskForm'].get('tags')?.value).toBe('Security');
-  });
-
-  it('Tags_Should_AddChip_When_UserPressesSpaceTwice', () => {
-    component['openCreateModal']();
-    component['tagInputText'] = 'rabbitmq ';
-    const spaceEvent = new KeyboardEvent('keydown', { key: ' ' });
-    component['onTagKeyDown'](spaceEvent);
-
-    expect(component['createdTags']).toContain('rabbitmq');
-    expect(component['tagInputText']).toBe('');
-  });
-
-  it('Tags_Should_NotAddChip_When_UserPressesSingleSpace', () => {
-    component['openCreateModal']();
-    component['tagInputText'] = 'rabbitmq';
-    const spaceEvent = new KeyboardEvent('keydown', { key: ' ' });
-    component['onTagKeyDown'](spaceEvent);
-
-    expect(component['createdTags']).not.toContain('rabbitmq');
-    expect(component['tagInputText']).toBe('rabbitmq');
-  });
-
-  it('Tags_Should_AddChip_When_DoubleSpaceEnteredInInput', () => {
-    component['openCreateModal']();
-    component['onTagInput']('rabbitmq  ');
-
-    expect(component['createdTags']).toContain('rabbitmq');
-    expect(component['tagInputText']).toBe('');
-  });
-
-  it('Tags_Should_AddChips_When_CommaSeparatedWordEntered', () => {
-    component['openCreateModal']();
-    component['onTagInput']('Auth, Gateway,');
-
-    expect(component['createdTags']).toEqual(['Auth', 'Gateway']);
-    expect(component['tagInputText']).toBe('');
-    expect(component['createTaskForm'].get('tags')?.value).toBe('Auth, Gateway');
-  });
-
-  it('Tags_Should_RemoveChip_When_RemoveButtonClicked', () => {
-    component['openCreateModal']();
-    component['addCreatedTag']('DevOps');
-    component['addCreatedTag']('Frontend');
-    expect(component['createdTags'].length).toBe(2);
-
-    component['removeCreatedTag']('DevOps');
-    expect(component['createdTags']).toEqual(['Frontend']);
-    expect(component['createTaskForm'].get('tags')?.value).toBe('Frontend');
-  });
-
-  it('Tags_Should_RemoveLastChip_When_BackspacePressedOnEmptyInput', () => {
-    component['openCreateModal']();
-    component['addCreatedTag']('CI/CD');
-    component['addCreatedTag']('Docker');
-    component['tagInputText'] = '';
-
-    const backspaceEvent = new KeyboardEvent('keydown', { key: 'Backspace' });
-    component['onTagKeyDown'](backspaceEvent);
-
-    expect(component['createdTags']).toEqual(['CI/CD']);
-  });
-
-  it('Tags_Should_FlushPendingText_When_SubmittingForm', () => {
-    component['openCreateModal']();
-    component['createTaskForm'].patchValue({
-      title: 'Task with pending tag',
-      priority: 'Low',
-    });
-    component['tagInputText'] = 'Database';
-
-    component['onCreateTaskSubmit']();
-
-    expect(taskServiceSpy.create).toHaveBeenCalled();
-    const createCallArg = taskServiceSpy.create.calls.mostRecent().args[0];
-    expect(createCallArg.tags).toContain('Database');
   });
 
   it('onOpenCreateAssigneeDialog_Should_OpenDialogAndComputeAnchorPosition_When_TriggerClicked', () => {
@@ -504,7 +403,7 @@ describe('DashboardComponent', () => {
     expect(wsService.getMembers).toHaveBeenCalledWith('ws-arch-core', '', 1, 3);
   });
 
-  it('onClearCreateAssignee_Should_ResetAssigneeAndFormValue_When_Invoked', () => {
+  it('onClearCreateAssignee_Should_ResetAssignee_When_Invoked', () => {
     component['openCreateModal']();
     component['selectedCreateAssignee'] = {
       id: 'member-10',
@@ -512,7 +411,6 @@ describe('DashboardComponent', () => {
       fullName: 'John Doe',
       email: 'john@test.com',
     };
-    component['createTaskForm'].patchValue({ assigneeId: 'member-10' });
 
     const mockEvent = {
       stopPropagation: jasmine.createSpy('stopPropagation'),
@@ -521,7 +419,6 @@ describe('DashboardComponent', () => {
 
     expect(mockEvent.stopPropagation).toHaveBeenCalled();
     expect(component['selectedCreateAssignee']).toBeNull();
-    expect(component['createTaskForm'].get('assigneeId')?.value).toBeNull();
   });
 
   it('onUserSelectedForAssignment_Should_SetCreateAssigneeAndCloseDialog_When_CreateModalOpenAndNoTaskToAssign', () => {
@@ -538,7 +435,6 @@ describe('DashboardComponent', () => {
     component['onUserSelectedForAssignment'](member);
 
     expect(component['selectedCreateAssignee']).toEqual(member);
-    expect(component['createTaskForm'].get('assigneeId')?.value).toBe('member-55');
     expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
     expect(taskServiceSpy.assign).not.toHaveBeenCalled();
   });
@@ -551,16 +447,16 @@ describe('DashboardComponent', () => {
       fullName: 'Lead Developer',
       email: 'dev@test.com',
     };
-    component['createTaskForm'].setValue({
+    const payload: CreateTaskPayload = {
       title: 'Task with Assignee',
       description: 'Check assignee is forwarded',
       priority: 'High',
       deadline: '2026-11-01',
-      tags: 'Assignment',
+      tags: ['Assignment'],
       assigneeId: 'user-77',
-    });
+    };
 
-    component['onCreateTaskSubmit']();
+    component['onCreateTaskSubmit'](payload);
 
     expect(taskServiceSpy.create).toHaveBeenCalledWith(
       jasmine.objectContaining({
@@ -572,19 +468,17 @@ describe('DashboardComponent', () => {
     expect(component['selectedCreateAssignee']).toBeNull();
   });
 
-  it('openCreateModal_Should_ResetSelectedCreateAssigneeAndFormAssigneeId_When_Called', () => {
+  it('openCreateModal_Should_ResetSelectedCreateAssignee_When_Called', () => {
     component['selectedCreateAssignee'] = {
       id: 'user-99',
       userName: 'old_assignee',
       fullName: 'Old Assignee',
       email: 'old@test.com',
     };
-    component['createTaskForm'].patchValue({ assigneeId: 'user-99' });
 
     component['openCreateModal']();
 
     expect(component['selectedCreateAssignee']).toBeNull();
-    expect(component['createTaskForm'].get('assigneeId')?.value).toBeNull();
   });
 
   it('closeCreateModal_Should_ResetSelectedCreateAssigneeAndCloseAssignDialog_When_Called', () => {
@@ -602,24 +496,6 @@ describe('DashboardComponent', () => {
     expect(component['selectedCreateAssignee']).toBeNull();
     expect(component.snapshot.isCreateModalOpen).toBeFalse();
     expect(component.snapshot.isAssignUserDialogOpen).toBeFalse();
-  });
-
-  it('getMemberInitial_Should_ReturnInitialOrQuestionMark_When_Invoked', () => {
-    expect(component['getMemberInitial'](null)).toBe('?');
-    expect(
-      component['getMemberInitial']({
-        id: '1',
-        userName: 'alice',
-        fullName: 'Alice Johnson',
-        email: 'a@a.com',
-      }),
-    ).toBe('A');
-    expect(
-      component['getMemberInitial']({ id: '2', userName: 'bob', fullName: null, email: 'b@b.com' }),
-    ).toBe('B');
-    expect(
-      component['getMemberInitial']({ id: '3', userName: '', fullName: null, email: 'c@c.com' }),
-    ).toBe('?');
   });
 
   it('onDetailsAssign_Should_OpenAssignUserDialogAndFetchMembers_When_Invoked', () => {
@@ -824,13 +700,13 @@ describe('DashboardComponent', () => {
     expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
     expect(component.snapshot.taskForTimeLog?.id).toBe('task-1');
 
-    component['logTimeForm'].setValue({
+    const payload: LogTimePayload = {
       minutesSpent: 90,
       description: 'Wrote unit tests',
       loggedDate: '2026-10-01',
-    });
+    };
 
-    component['onLogTimeSubmit']();
+    component['onLogTimeSubmit'](payload);
 
     expect(taskServiceSpy.logTime).toHaveBeenCalledWith('task-1', {
       minutesSpent: 90,
@@ -847,13 +723,13 @@ describe('DashboardComponent', () => {
     component['openLogTimeModal'](mockTasks[0]);
     expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
 
-    component['logTimeForm'].setValue({
+    const payload: LogTimePayload = {
       minutesSpent: 90,
       description: 'Wrote unit tests',
       loggedDate: '2026-10-01',
-    });
+    };
 
-    component['onLogTimeSubmit']();
+    component['onLogTimeSubmit'](payload);
 
     expect(taskServiceSpy.logTime).toHaveBeenCalledWith('task-1', {
       minutesSpent: 90,
@@ -862,25 +738,6 @@ describe('DashboardComponent', () => {
     });
     expect(notificationServiceSpy.success).not.toHaveBeenCalled();
     expect(component.snapshot.isLogTimeModalOpen).toBeTrue();
-  });
-
-  it('setTimePreset_Should_UpdateMinutesSpentInForm_When_Invoked', () => {
-    expect(component.timePresets.length).toBe(5);
-
-    component['setTimePreset'](30);
-    expect(component['logTimeForm'].get('minutesSpent')?.value).toBe(30);
-
-    component['setTimePreset'](60);
-    expect(component['logTimeForm'].get('minutesSpent')?.value).toBe(60);
-
-    component['setTimePreset'](120);
-    expect(component['logTimeForm'].get('minutesSpent')?.value).toBe(120);
-
-    component['setTimePreset'](240);
-    expect(component['logTimeForm'].get('minutesSpent')?.value).toBe(240);
-
-    component['setTimePreset'](480);
-    expect(component['logTimeForm'].get('minutesSpent')?.value).toBe(480);
   });
 
   it('onEscape_Should_CloseOpenModalsOrBladePriorToDropdown_When_Invoked', () => {
@@ -1430,19 +1287,16 @@ describe('DashboardComponent', () => {
 
       expect(component.snapshot.isRemoveMemberModalOpen).toBeTrue();
       expect(component.snapshot.memberToRemove).toEqual(mockMember);
-      expect(component.snapshot.removeMemberConfirmInput).toBe('');
       expect(component.snapshot.isRemovingMember).toBeFalse();
     });
 
     it('closeRemoveMemberModal_Should_ResetStateAndCloseModal_When_NotRemoving', () => {
       component['openRemoveMemberModal'](mockMember);
-      component['onRemoveMemberConfirmInputChange']('bob_builder');
 
       component['closeRemoveMemberModal']();
 
       expect(component.snapshot.isRemoveMemberModalOpen).toBeFalse();
       expect(component.snapshot.memberToRemove).toBeNull();
-      expect(component.snapshot.removeMemberConfirmInput).toBe('');
       expect(component.snapshot.isRemovingMember).toBeFalse();
     });
 
@@ -1455,32 +1309,6 @@ describe('DashboardComponent', () => {
       expect(component.snapshot.isRemoveMemberModalOpen).toBeTrue();
     });
 
-    it('onRemoveMemberConfirmInputChange_Should_UpdateConfirmInput_When_Typing', () => {
-      component['onRemoveMemberConfirmInputChange']('bob_builder');
-      expect(component.snapshot.removeMemberConfirmInput).toBe('bob_builder');
-    });
-
-    it('isRemoveMemberButtonEnabled_Should_ReturnTrueOnlyWhenExactUsernameSpellingMatches', () => {
-      component['openRemoveMemberModal'](mockMember);
-
-      // Empty input
-      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
-      expect(component.isRemoveMemberConfirmed).toBeFalse();
-
-      // Wrong spelling
-      component['onRemoveMemberConfirmInputChange']('bob');
-      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
-
-      // Correct spelling with extra whitespace around
-      component['onRemoveMemberConfirmInputChange']('  bob_builder  ');
-      expect(component['isRemoveMemberButtonEnabled']()).toBeTrue();
-      expect(component.isRemoveMemberConfirmed).toBeTrue();
-
-      // In-flight removal disables button
-      component['updateState']({ isRemovingMember: true });
-      expect(component['isRemoveMemberButtonEnabled']()).toBeFalse();
-    });
-
     it('confirmRemoveMember_Should_CallServiceAndNotifyAndReload_When_Valid', () => {
       component['updateState']({
         selectedWorkspace: mockWorkspace,
@@ -1488,9 +1316,8 @@ describe('DashboardComponent', () => {
         settingsMembersPage: 1,
       });
       component['openRemoveMemberModal'](mockMember);
-      component['onRemoveMemberConfirmInputChange']('bob_builder');
 
-      component['confirmRemoveMember']();
+      component['confirmRemoveMember'](mockMember);
 
       expect(workspaceService.removeMember).toHaveBeenCalledWith('ws-arch-core', 'usr-123');
       expect(notificationServiceSpy.success).toHaveBeenCalledWith(
@@ -1508,9 +1335,8 @@ describe('DashboardComponent', () => {
         settingsMembersPage: 2,
       });
       component['openRemoveMemberModal'](mockMember);
-      component['onRemoveMemberConfirmInputChange']('bob_builder');
 
-      component['confirmRemoveMember']();
+      component['confirmRemoveMember'](mockMember);
 
       expect(component.snapshot.settingsMembersPage).toBe(1);
     });
@@ -1521,9 +1347,8 @@ describe('DashboardComponent', () => {
       );
       component['updateState']({ selectedWorkspace: mockWorkspace });
       component['openRemoveMemberModal'](mockMember);
-      component['onRemoveMemberConfirmInputChange']('bob_builder');
 
-      component['confirmRemoveMember']();
+      component['confirmRemoveMember'](mockMember);
 
       expect(notificationServiceSpy.error).toHaveBeenCalledWith('Cannot remove owner.');
       expect(component.snapshot.isRemovingMember).toBeFalse();

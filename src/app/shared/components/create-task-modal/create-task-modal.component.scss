@@ -1,0 +1,233 @@
+$az-blue: #0078d4;
+$az-blue-light: #eff6fc;
+$az-text: #201f1e;
+$az-muted: #a19f9d;
+
+/* Tag Input Chips / Fourangles */
+.azure-tags-input-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d2d0ce;
+  border-radius: 2px;
+  background: #ffffff;
+  cursor: text;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: #a19f9d;
+  }
+
+  &:focus-within {
+    border-color: $az-blue;
+    box-shadow: 0 0 0 1px $az-blue;
+  }
+}
+
+.tag-fourangle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: $az-blue-light;
+  color: #004578;
+  border: 1px solid #c7e0f4;
+  border-radius: 2px;
+  padding: 0.125rem 0.375rem 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  user-select: none;
+  animation: tagChipPop 0.15s ease-out;
+
+  .tag-text {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-remove-tag {
+    border: none;
+    background: transparent;
+    color: #004578;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    opacity: 0.65;
+    transition:
+      opacity 0.15s ease,
+      background 0.15s ease;
+
+    &:hover {
+      opacity: 1;
+      background: rgba(0, 120, 212, 0.15);
+    }
+  }
+}
+
+@keyframes tagChipPop {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tag-inline-input {
+  flex: 1;
+  min-width: 140px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: $az-text;
+  padding: 0.125rem 0;
+  font-family: inherit;
+
+  &::placeholder {
+    color: $az-muted;
+  }
+}
+
+/* Assignee Control inside Form */
+.create-assignee-control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  .assignee-selected-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+  }
+
+  .assignee-picker-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 32px;
+    padding: 0 0.625rem;
+    box-sizing: border-box;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 0.8125rem;
+    color: #323130;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+    text-align: left;
+    font-family: inherit;
+
+    &:hover {
+      border-color: #a19f9d;
+      background: #f3f2f1;
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: $az-blue;
+      box-shadow: 0 0 0 1px $az-blue;
+    }
+
+    &.is-unassigned {
+      color: #605e5c;
+
+      .unassigned-icon {
+        color: #605e5c;
+        display: block;
+        flex-shrink: 0;
+      }
+
+      .unassigned-label {
+        font-size: 0.8125rem;
+        flex: 1;
+      }
+    }
+
+    &.is-assigned {
+      border-color: #c7e0f4;
+      background: #f3f9fd;
+      flex: 1;
+      min-width: 0;
+
+      &:hover {
+        border-color: $az-blue;
+        background: $az-blue-light;
+      }
+
+      .avatar-letter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: $az-blue;
+        color: #ffffff;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .assignee-name {
+        font-weight: 600;
+        color: #004578;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+      }
+    }
+  }
+
+  .btn-clear-assignee {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 32px;
+    box-sizing: border-box;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #605e5c;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    flex-shrink: 0;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+
+    &:hover {
+      background: #fdf3f2;
+      color: #a4262c;
+      border-color: #fde7e9;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #a4262c;
+      outline-offset: 1px;
+    }
+  }
+}

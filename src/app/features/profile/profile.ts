@@ -4,8 +4,10 @@ import {
   DestroyRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnInit,
   Output,
+  SimpleChanges,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -29,6 +31,9 @@ import { NavigationHistoryService } from '../../core/services/navigation-history
 import { UserProfile } from '../../core/models/user.models';
 import { AutoTrimDirective } from '../../shared/directives/auto-trim.directive';
 import { trimFormGroup } from '../../shared/utils/form.utils';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { ExpandableItemComponent } from '../../shared/components/expandable-item/expandable-item';
+import { StatePanelComponent } from '../../shared/components/state-panel/state-panel';
 
 export interface ProfileState {
   readonly loading: boolean;
@@ -81,19 +86,21 @@ const initialProfileState: ProfileState = {
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, AutoTrimDirective],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    AutoTrimDirective,
+    IconComponent,
+    ExpandableItemComponent,
+    StatePanelComponent,
+  ],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfileComponent implements OnInit {
-  @Input() set userId(value: string | undefined | null) {
-    if (value !== undefined) {
-      this.updateState({ routeUserId: value });
-      this.loadProfile();
-    }
-  }
-
+export class ProfileComponent implements OnInit, OnChanges {
+  @Input() userId?: string | null;
   @Input() embedded = false;
 
   @Output() readonly profileUpdated = new EventEmitter<UserProfile>();
@@ -228,7 +235,12 @@ export class ProfileComponent implements OnInit {
         this.updateState({ routeUserId: id });
         this.loadProfile();
       });
-    } else if (this.stateSubject.value.routeUserId) {
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (this.embedded && changes['userId']) {
+      this.updateState({ routeUserId: this.userId ?? null });
       this.loadProfile();
     }
   }

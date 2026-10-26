@@ -1,0 +1,54 @@
+<section class="settings-item" [class.is-expanded]="expanded">
+  <button
+    type="button"
+    class="item-header"
+    (click)="onToggle()"
+    [attr.aria-expanded]="expanded"
+    [attr.aria-controls]="panelId"
+    [attr.id]="toggleButtonId"
+  >
+    <div class="item-header-left">
+      @if (icon) {
+        <div
+          class="item-icon-wrapper"
+          [class.tone-primary]="iconTone === 'primary'"
+          [class.tone-danger]="iconTone === 'danger' || iconTone === 'security'"
+          [class.tone-neutral]="iconTone === 'neutral' || iconTone === 'metadata'"
+          aria-hidden="true"
+        >
+          <app-icon [name]="icon" [size]="20"></app-icon>
+        </div>
+      }
+      <div class="item-header-text">
+        <h2 class="item-title">{{ title }}</h2>
+        @if (description) {
+          <p class="item-desc">{{ description }}</p>
+        }
+      </div>
+    </div>
+
+    <div class="item-header-right">
+      <app-icon
+        name="chevron-down"
+        [size]="20"
+        class="chevron-icon"
+        [class.rotated]="expanded"
+        aria-hidden="true"
+      ></app-icon>
+    </div>
+  </button>
+
+  <div
+    class="item-body"
+    [class.is-expanded]="expanded"
+    [attr.id]="panelId"
+    role="region"
+    [attr.aria-labelledby]="toggleButtonId"
+  >
+    <div class="item-content">
+      <div class="item-inner">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+</section>

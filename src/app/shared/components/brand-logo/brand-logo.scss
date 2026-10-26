@@ -1,0 +1,20 @@
+.brand-logo-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+  color: inherit;
+
+  svg {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: inherit;
+    font-weight: 600;
+    color: inherit;
+    letter-spacing: inherit;
+    line-height: 1;
+  }
+}

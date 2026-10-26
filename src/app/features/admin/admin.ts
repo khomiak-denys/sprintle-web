@@ -23,6 +23,10 @@ import { TaskResult, TaskDetailsResult, TaskStatus } from '../../core/models/tas
 import { Workspace } from '../../core/models/workspace.models';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { ProfileComponent } from '../profile/profile';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo';
+import { UserMenuComponent } from '../../shared/components/user-menu/user-menu';
+import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog';
 
 export type AdminTab = 'users' | 'tasks' | 'workspaces';
 
@@ -136,7 +140,15 @@ const initialAdminState: AdminState = {
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProfileComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ProfileComponent,
+    IconComponent,
+    BrandLogoComponent,
+    UserMenuComponent,
+    ConfirmDialogComponent,
+  ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

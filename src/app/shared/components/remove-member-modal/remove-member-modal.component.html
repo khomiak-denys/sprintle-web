@@ -1,0 +1,93 @@
+@if (isOpen && member) {
+  <div class="modal-overlay" (click)="onClose()" id="remove-member-overlay"></div>
+  <div
+    class="azure-modal danger-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="remove-member-title"
+    id="remove-member-modal"
+  >
+    <div class="modal-header">
+      <h3 class="modal-title modal-danger-title" id="remove-member-title">Remove Member</h3>
+      <button
+        type="button"
+        class="modal-close-btn"
+        (click)="onClose()"
+        aria-label="Close"
+        id="btn-close-remove-member"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="modal-body-content">
+      <div class="danger-warning-banner">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#d13438"
+          stroke-width="2"
+        >
+          <path
+            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+          ></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <div>
+          <strong>Warning: Workspace Member Removal</strong>
+          <p>
+            You are about to remove member
+            <strong>{{ member.fullName || member.userName }}</strong> (&#64;{{ member.userName }})
+            from workspace <strong>{{ workspaceName }}</strong
+            >. This user will lose access to all work items and boards in this workspace.
+          </p>
+        </div>
+      </div>
+
+      <div class="confirmation-prompt-group">
+        <label for="input-confirm-member-username" class="confirm-label">
+          To confirm, please type the exact username
+          <code>{{ member.userName }}</code> below:
+        </label>
+        <input
+          id="input-confirm-member-username"
+          type="text"
+          class="azure-input"
+          [value]="confirmInput"
+          (input)="onConfirmInputChange($any($event.target).value)"
+          placeholder="Type username to confirm"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="onClose()"
+        [disabled]="isRemoving"
+        id="btn-cancel-remove-member"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn-danger"
+        [disabled]="!isConfirmEnabled()"
+        (click)="onConfirm()"
+        id="btn-confirm-remove-member"
+      >
+        @if (isRemoving) {
+          <span class="btn-spinner"></span>
+          <span>Removing...</span>
+        } @else {
+          <span>Remove Member</span>
+        }
+      </button>
+    </div>
+  </div>
+}

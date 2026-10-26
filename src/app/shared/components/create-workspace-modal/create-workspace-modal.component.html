@@ -1,0 +1,83 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onClose()"></div>
+  <div class="azure-modal" role="dialog" aria-modal="true" aria-labelledby="create-ws-title">
+    <div class="modal-header">
+      <h2 class="modal-title" id="create-ws-title">Create New Workspace</h2>
+      <button type="button" class="modal-close-btn" (click)="onClose()" aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    @if (canCreate) {
+      <form [formGroup]="createForm" (ngSubmit)="onSubmit()" class="azure-modal-form">
+        <div class="form-field">
+          <label for="ws-name-input">Workspace Name *</label>
+          <input
+            type="text"
+            id="ws-name-input"
+            class="azure-input"
+            formControlName="name"
+            placeholder="e.g. Analytics Platform"
+            autocomplete="off"
+          />
+          @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['required']) {
+            <span class="field-error">Name is required</span>
+          }
+          @if (createForm.get('name')?.touched && createForm.get('name')?.errors?.['minlength']) {
+            <span class="field-error">Name must be at least 3 characters</span>
+          }
+        </div>
+
+        <div class="form-field">
+          <label for="ws-desc-input">Description</label>
+          <textarea
+            id="ws-desc-input"
+            class="azure-textarea"
+            formControlName="description"
+            rows="3"
+            placeholder="Describe the projects, domain, and goals for this workspace..."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer modal-footer-actions">
+          <button type="button" class="btn-secondary" (click)="onClose()" [disabled]="isSubmitting">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="createForm.invalid || isSubmitting"
+            id="submit-create-workspace-btn"
+          >
+            @if (isSubmitting) {
+              <span class="btn-spinner"></span>
+              <span>Creating...</span>
+            } @else {
+              <span>Create Workspace</span>
+            }
+          </button>
+        </div>
+      </form>
+    } @else {
+      <div class="azure-modal-form unauthorized-modal-body">
+        <div class="permission-notice permission-notice-warning">
+          <span>
+            Workspace creation requires the <strong>Manager</strong> role in the backend. You can
+            contact an administrator to request access.
+          </span>
+        </div>
+
+        <div class="modal-footer modal-footer-actions">
+          <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+          <a
+            href="mailto:admin@gmail.com"
+            class="btn-primary btn-contact-admin"
+            id="btn-contact-admin"
+          >
+            Contact Admin
+          </a>
+        </div>
+      </div>
+    }
+  </div>
+}

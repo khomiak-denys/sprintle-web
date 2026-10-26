@@ -27,6 +27,13 @@ import {
   generateWorkspaceCode,
 } from '../../core/models/workspace.models';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import {
+  CreateWorkspaceModalComponent,
+  CreateWorkspacePayload,
+} from '../../shared/components/create-workspace-modal/create-workspace-modal.component';
+import { IconComponent } from '../../shared/components/icon/icon';
+import { BrandLogoComponent } from '../../shared/components/brand-logo/brand-logo';
+import { UserMenuComponent } from '../../shared/components/user-menu/user-menu';
 
 export interface WorkspacesState {
   readonly searchQuery: string;
@@ -49,7 +56,16 @@ const initialState: WorkspacesState = {
 @Component({
   selector: 'app-workspaces',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, SkeletonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    SkeletonComponent,
+    CreateWorkspaceModalComponent,
+    IconComponent,
+    BrandLogoComponent,
+    UserMenuComponent,
+  ],
   templateUrl: './workspaces.html',
   styleUrl: './workspaces.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -148,6 +164,10 @@ export class WorkspacesComponent implements OnInit {
     this.updateState({ dropdownOpen: !this.stateSubject.value.dropdownOpen });
   }
 
+  protected closeDropdown(): void {
+    this.updateState({ dropdownOpen: false });
+  }
+
   // ==========================================
   // CREATE WORKSPACE
   // ==========================================
@@ -166,16 +186,19 @@ export class WorkspacesComponent implements OnInit {
     this.updateState({ isCreateModalOpen: false, submitting: false });
   }
 
-  protected submitCreateWorkspace(): void {
-    if (this.createForm.invalid) {
+  protected submitCreateWorkspace(payload?: CreateWorkspacePayload): void {
+    if (!payload && this.createForm.invalid) {
       this.createForm.markAllAsTouched();
       return;
     }
 
     const formVal = this.createForm.value;
-    const name = formVal.name.trim();
-    const description = formVal.description?.trim() || null;
-    const code = formVal.code?.trim().toUpperCase() || generateWorkspaceCode(name);
+    const name = (payload ? payload.name : formVal.name)?.trim() || '';
+    const description = payload ? payload.description : formVal.description?.trim() || null;
+
+    if (!name) {
+      return;
+    }
 
     this.updateState({ submitting: true });
 

@@ -272,4 +272,43 @@ describe('ProfileComponent', () => {
     expect(component.backToDashboardRoute).toBe('/workspaces');
     expect(component.backButtonLabel).toBe('Back to Workspaces');
   });
+
+  it('loadProfile_Should_FetchProfileOnlyOnce_When_EmbeddedWithUserId', () => {
+    const newFixture = TestBed.createComponent(ProfileComponent);
+    const newComponent = newFixture.componentInstance;
+    userServiceSpy.getProfile.calls.reset();
+
+    newComponent.embedded = true;
+    newComponent.userId = 'user-embedded-456';
+    newComponent.ngOnChanges({
+      userId: {
+        currentValue: 'user-embedded-456',
+        previousValue: undefined,
+        firstChange: true,
+        isFirstChange: () => true,
+      },
+    });
+    newFixture.detectChanges(); // triggers ngOnInit
+
+    expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
+    expect(userServiceSpy.getProfile).toHaveBeenCalledWith('user-embedded-456');
+  });
+
+  it('userId_Should_ReloadProfile_When_ChangedAfterInit', () => {
+    userServiceSpy.getProfile.calls.reset();
+
+    component.embedded = true;
+    component.userId = 'user-second-789';
+    component.ngOnChanges({
+      userId: {
+        currentValue: 'user-second-789',
+        previousValue: 'user-123',
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
+
+    expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
+    expect(userServiceSpy.getProfile).toHaveBeenCalledWith('user-second-789');
+  });
 });
