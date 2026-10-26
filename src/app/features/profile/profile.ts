@@ -99,7 +99,7 @@ const initialProfileState: ProfileState = {
 })
 export class ProfileComponent implements OnInit {
   @Input() set userId(value: string | undefined | null) {
-    if (value !== undefined) {
+    if (value !== undefined && value !== this.stateSubject.value.routeUserId) {
       this.updateState({ routeUserId: value });
       this.loadProfile();
     }
@@ -239,7 +239,7 @@ export class ProfileComponent implements OnInit {
         this.updateState({ routeUserId: id });
         this.loadProfile();
       });
-    } else if (this.stateSubject.value.routeUserId) {
+    } else if (this.stateSubject.value.routeUserId && !this.stateSubject.value.profile) {
       this.loadProfile();
     }
   }
