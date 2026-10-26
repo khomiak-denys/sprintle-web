@@ -4,8 +4,10 @@ import {
   DestroyRef,
   EventEmitter,
   Input,
+  OnChanges,
   OnInit,
   Output,
+  SimpleChanges,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -97,18 +99,8 @@ const initialProfileState: ProfileState = {
   styleUrl: './profile.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfileComponent implements OnInit {
-  private isInitialized = false;
-
-  @Input() set userId(value: string | undefined | null) {
-    if (value !== undefined && value !== this.stateSubject.value.routeUserId) {
-      this.updateState({ routeUserId: value });
-      if (this.isInitialized) {
-        this.loadProfile();
-      }
-    }
-  }
-
+export class ProfileComponent implements OnInit, OnChanges {
+  @Input() userId?: string | null;
   @Input() embedded = false;
 
   @Output() readonly profileUpdated = new EventEmitter<UserProfile>();
@@ -237,14 +229,18 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.isInitialized = true;
     if (!this.embedded) {
       this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
         const id = params.get('id');
         this.updateState({ routeUserId: id });
         this.loadProfile();
       });
-    } else {
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (this.embedded && changes['userId']) {
+      this.updateState({ routeUserId: this.userId ?? null });
       this.loadProfile();
     }
   }

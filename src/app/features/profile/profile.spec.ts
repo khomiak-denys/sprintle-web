@@ -280,6 +280,14 @@ describe('ProfileComponent', () => {
 
     newComponent.embedded = true;
     newComponent.userId = 'user-embedded-456';
+    newComponent.ngOnChanges({
+      userId: {
+        currentValue: 'user-embedded-456',
+        previousValue: undefined,
+        firstChange: true,
+        isFirstChange: () => true,
+      },
+    });
     newFixture.detectChanges(); // triggers ngOnInit
 
     expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
@@ -291,6 +299,14 @@ describe('ProfileComponent', () => {
 
     component.embedded = true;
     component.userId = 'user-second-789';
+    component.ngOnChanges({
+      userId: {
+        currentValue: 'user-second-789',
+        previousValue: 'user-123',
+        firstChange: false,
+        isFirstChange: () => false,
+      },
+    });
 
     expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
     expect(userServiceSpy.getProfile).toHaveBeenCalledWith('user-second-789');
