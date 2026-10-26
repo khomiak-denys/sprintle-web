@@ -98,10 +98,14 @@ const initialProfileState: ProfileState = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileComponent implements OnInit {
+  private isInitialized = false;
+
   @Input() set userId(value: string | undefined | null) {
     if (value !== undefined && value !== this.stateSubject.value.routeUserId) {
       this.updateState({ routeUserId: value });
-      this.loadProfile();
+      if (this.isInitialized) {
+        this.loadProfile();
+      }
     }
   }
 
@@ -233,13 +237,14 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.isInitialized = true;
     if (!this.embedded) {
       this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
         const id = params.get('id');
         this.updateState({ routeUserId: id });
         this.loadProfile();
       });
-    } else if (this.stateSubject.value.routeUserId && !this.stateSubject.value.profile) {
+    } else {
       this.loadProfile();
     }
   }

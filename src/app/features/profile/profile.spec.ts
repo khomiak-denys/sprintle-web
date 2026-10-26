@@ -272,4 +272,27 @@ describe('ProfileComponent', () => {
     expect(component.backToDashboardRoute).toBe('/workspaces');
     expect(component.backButtonLabel).toBe('Back to Workspaces');
   });
+
+  it('loadProfile_Should_FetchProfileOnlyOnce_When_EmbeddedWithUserId', () => {
+    const newFixture = TestBed.createComponent(ProfileComponent);
+    const newComponent = newFixture.componentInstance;
+    userServiceSpy.getProfile.calls.reset();
+
+    newComponent.embedded = true;
+    newComponent.userId = 'user-embedded-456';
+    newFixture.detectChanges(); // triggers ngOnInit
+
+    expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
+    expect(userServiceSpy.getProfile).toHaveBeenCalledWith('user-embedded-456');
+  });
+
+  it('userId_Should_ReloadProfile_When_ChangedAfterInit', () => {
+    userServiceSpy.getProfile.calls.reset();
+
+    component.embedded = true;
+    component.userId = 'user-second-789';
+
+    expect(userServiceSpy.getProfile).toHaveBeenCalledTimes(1);
+    expect(userServiceSpy.getProfile).toHaveBeenCalledWith('user-second-789');
+  });
 });
