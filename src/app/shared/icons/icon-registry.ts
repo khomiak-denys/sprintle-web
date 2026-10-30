@@ -159,6 +159,50 @@ export const ICONS = {
     viewBox: '0 0 24 24',
     body: '<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>',
   },
+
+  // Azure DevOps Work Item Types (Official Colors)
+  'task-item': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#f2c811" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2" ry="2" fill="#fff9db"></rect><line x1="8" y1="8" x2="16" y2="8"></line><line x1="8" y1="12" x2="16" y2="12"></line><polyline points="8 16 11 18 16 13"></polyline></g>',
+  },
+  'epic-item': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#e69500" stroke-width="2" fill="#e69500"><path d="M3 19h18v2H3zM5 16l3-7 4 4 4-7 3 7H5z"></path></g>',
+  },
+  'feature-item': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#773adc" stroke-width="2" fill="#773adc"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></g>',
+  },
+  'story-item': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#009ccc" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" fill="none"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" fill="#e5f5fa"></path><line x1="9" y1="7" x2="15" y2="7"></line><line x1="9" y1="11" x2="14" y2="11"></line></g>',
+  },
+  'bug-item': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#cc293d" stroke-width="2" fill="#cc293d"><rect x="8" y="9" width="8" height="11" rx="4"></rect><path d="M12 5V9" fill="none"></path><path d="M5 11l3 1" fill="none"></path><path d="M19 11l-3 1" fill="none"></path><path d="M5 15h3" fill="none"></path><path d="M16 15h3" fill="none"></path><path d="M5 19l3-1" fill="none"></path><path d="M19 19l-3-1" fill="none"></path><path d="M9 5a3 3 0 0 1 6 0" fill="none"></path></g>',
+  },
+
+  // Jira Priorities (Official Colors)
+  'priority-lowest': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#2684ff" stroke-width="2.5" fill="none"><polyline points="7 6 12 11 17 6"></polyline><polyline points="7 13 12 18 17 13"></polyline></g>',
+  },
+  'priority-low': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#0052cc" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"></polyline></g>',
+  },
+  'priority-medium': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#e27c00" stroke-width="2.5" fill="none"><line x1="5" y1="9" x2="19" y2="9"></line><line x1="5" y1="15" x2="19" y2="15"></line></g>',
+  },
+  'priority-high': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#de350b" stroke-width="2.5" fill="none"><polyline points="18 15 12 9 6 15"></polyline></g>',
+  },
+  'priority-critical': {
+    viewBox: '0 0 24 24',
+    body: '<g stroke="#bf2600" stroke-width="2.5" fill="none"><polyline points="17 18 12 13 7 18"></polyline><polyline points="17 11 12 6 7 11"></polyline></g>',
+  },
 } as const;
 
 export type IconName = keyof typeof ICONS;
