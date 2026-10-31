@@ -201,6 +201,7 @@ select {
 
   &.action-btn-primary {
     color: #0078d4;
+
     &:hover {
       background: #eff6fc;
       border-color: #0078d4;
@@ -209,6 +210,7 @@ select {
 
   &.action-btn-danger {
     color: #d13438;
+
     &:hover {
       background: #fde7e9;
       border-color: #d13438;
@@ -217,6 +219,7 @@ select {
 
   &.action-btn-success {
     color: #107c10;
+
     &:hover {
       background: #dff6dd;
       border-color: #107c10;
@@ -318,7 +321,7 @@ select {
     padding: 0.875rem 1.25rem;
     margin: 0;
     border-top: 1px solid #edebe9;
-    background: #faf9f8;
+    background: #ffffff;
   }
 
   .time-presets-grid {
@@ -497,6 +500,7 @@ select {
 
   .table-row {
     cursor: pointer;
+
     &:hover {
       background: #f3f9fd;
     }
@@ -519,30 +523,38 @@ select {
     border-radius: 50%;
     background: #605e5c;
   }
+
   &.status-inprogress {
     background: #eff6fc;
     color: #0078d4;
+
     .status-dot {
       background: #0078d4;
     }
   }
+
   &.status-inreview {
     background: #f3f0f8;
     color: #8764b8;
+
     .status-dot {
       background: #8764b8;
     }
   }
+
   &.status-done {
     background: #dff6dd;
     color: #107c10;
+
     .status-dot {
       background: #107c10;
     }
   }
+
   &.status-cancelled {
     background: #fde7e9;
     color: #a80000;
+
     .status-dot {
       background: #a80000;
     }
@@ -552,10 +564,12 @@ select {
 .empty-muted {
   color: #a19f9d;
 }
+
 .empty-row {
   text-align: center;
   padding: 2rem !important;
 }
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -563,12 +577,14 @@ select {
   gap: 0.5rem;
   color: #a19f9d;
 }
+
 .empty-title {
   font-size: 0.9375rem;
   font-weight: 600;
   color: #201f1e;
   margin: 0;
 }
+
 .empty-subtitle {
   font-size: 0.8125rem;
   margin: 0;
@@ -580,6 +596,9 @@ select {
 
 .priority-pill,
 .priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 700;
   padding: 0.0625rem 0.375rem;
@@ -589,14 +608,17 @@ select {
     background: #fde7e9;
     color: #a80000;
   }
+
   &.priority-high {
     background: #fff4ce;
     color: #794a00;
   }
+
   &.priority-medium {
     background: #eff6fc;
     color: #004578;
   }
+
   &.priority-low {
     background: #f3f2f1;
     color: #605e5c;
@@ -616,12 +638,14 @@ select {
   .search-icon {
     color: #605e5c;
   }
+
   input {
     border: none;
     outline: none;
     font-size: 0.8125rem;
     width: 100%;
     color: #201f1e;
+
     &::placeholder {
       color: #a19f9d;
     }
@@ -646,21 +670,27 @@ select {
   &.stat-total-scope {
     border-left-color: #201f1e;
   }
+
   &.stat-filtered {
     border-left-color: #8a8886;
   }
+
   &.stat-in-progress {
     border-left-color: #0078d4;
   }
+
   &.stat-in-review {
     border-left-color: #8764b8;
   }
+
   &.stat-done {
     border-left-color: #107c10;
   }
+
   &.stat-critical {
     border-left-color: #a80000;
   }
+
   &.stat-rate {
     border-left-color: #008272;
   }
@@ -672,6 +702,7 @@ select {
   text-transform: uppercase;
   color: #605e5c;
 }
+
 .stat-card-value {
   font-size: 1.25rem;
   font-weight: 700;
@@ -679,6 +710,7 @@ select {
   line-height: 1.2;
   margin: 0.125rem 0;
 }
+
 .stat-card-hint {
   font-size: 0.6875rem;
   color: #a19f9d;
@@ -744,15 +776,19 @@ select {
   &.fill-todo {
     background: #8a8886;
   }
+
   &.fill-inprogress {
     background: #0078d4;
   }
+
   &.fill-inreview {
     background: #8764b8;
   }
+
   &.fill-done {
     background: #107c10;
   }
+
   &.fill-cancelled {
     background: #a80000;
   }
@@ -760,12 +796,15 @@ select {
   &.fill-critical {
     background: #a80000;
   }
+
   &.fill-high {
     background: #d83b01;
   }
+
   &.fill-medium {
     background: #0078d4;
   }
+
   &.fill-low {
     background: #8a8886;
   }

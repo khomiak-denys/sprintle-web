@@ -27,6 +27,11 @@
     <!-- Title Header -->
     <div class="blade-title-container">
       <h2 id="blade-title" class="blade-title-text">
+        <app-icon
+          [name]="getTaskTypeIcon(task.type)"
+          [size]="20"
+          class="blade-type-icon"
+        ></app-icon>
         <span class="blade-task-number">{{ task.number }}</span>
         <span>{{ task.title }}</span>
       </h2>
@@ -401,6 +406,7 @@
                   [attr.aria-expanded]="isPriorityDropdownOpen"
                   title="Change priority"
                 >
+                  <app-icon [name]="getPriorityIcon(task.priority)" [size]="14"></app-icon>
                   <span class="priority-text">{{ task.priority }}</span>
                   <svg
                     class="priority-chevron"
@@ -427,7 +433,7 @@
                         (click)="selectPriority(level)"
                         [id]="'priority-option-' + level.toLowerCase()"
                       >
-                        <span class="priority-dot priority-{{ level.toLowerCase() }}"></span>
+                        <app-icon [name]="getPriorityIcon(level)" [size]="14"></app-icon>
                         <span class="priority-name">{{ level }}</span>
                         @if (level === task.priority) {
                           <svg

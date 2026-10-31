@@ -1,0 +1,27 @@
+<div class="custom-select-container">
+  <div class="select-trigger" (click)="toggleDropdown($event)" [class.open]="isOpen">
+    <div class="selected-content">
+      @if (selectedOption?.icon) {
+        <app-icon [name]="selectedOption!.icon!" class="option-icon"></app-icon>
+      }
+      <span>{{ selectedOption ? selectedOption.label : placeholder }}</span>
+    </div>
+
+    <app-icon name="chevron-down" class="arrow"></app-icon>
+  </div>
+
+  <ul class="options-list" *ngIf="isOpen">
+    @for (option of options; track option.value) {
+      <li
+        class="option-item"
+        [class.selected]="option.value === selectedOption?.value"
+        (click)="selectOption(option, $event)"
+      >
+        @if (option.icon) {
+          <app-icon [name]="option.icon" class="option-icon"></app-icon>
+        }
+        <span>{{ option.label }}</span>
+      </li>
+    }
+  </ul>
+</div>

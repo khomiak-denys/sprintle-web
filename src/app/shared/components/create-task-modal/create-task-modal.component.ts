@@ -10,12 +10,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Priority } from '../../../core/models/task.models';
+import { Priority, TaskType } from '../../../core/models/task.models';
 import { AssignableMember } from '../assign-user-dialog/assign-user-dialog';
+import { Dropdown } from '../dropdown/dropdown';
+import { PRIORITIES, TASK_TYPES } from '../../../core/constants/task.constants';
 
 export interface CreateTaskPayload {
   title: string;
   priority: Priority;
+  type: TaskType;
   deadline: string | null;
   description: string | null;
   assigneeId: string | null;
@@ -25,7 +28,7 @@ export interface CreateTaskPayload {
 @Component({
   selector: 'app-create-task-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, Dropdown],
   templateUrl: './create-task-modal.component.html',
   styleUrl: './create-task-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,12 +45,16 @@ export class CreateTaskModalComponent implements OnChanges {
   @Output() readonly openAssigneeDialog = new EventEmitter<MouseEvent>();
   @Output() readonly clearAssignee = new EventEmitter<MouseEvent | undefined>();
 
+  protected readonly taskTypes = TASK_TYPES;
+  protected readonly priorities = PRIORITIES;
+
   protected createdTags: string[] = [];
   protected tagInputText = '';
 
   protected readonly createTaskForm: FormGroup = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
     priority: ['Medium' as Priority, [Validators.required]],
+    type: ['Task' as TaskType, [Validators.required]],
     deadline: [''],
     description: [''],
     assigneeId: [null],
@@ -92,6 +99,7 @@ export class CreateTaskModalComponent implements OnChanges {
     this.submitTask.emit({
       title: val.title.trim(),
       description: val.description?.trim() || null,
+      type: val.type,
       priority: val.priority,
       deadline: val.deadline ? new Date(val.deadline).toISOString() : null,
       assigneeId: val.assigneeId || null,
@@ -182,12 +190,21 @@ export class CreateTaskModalComponent implements OnChanges {
     this.createTaskForm.get('tags')?.setValue(this.createdTags.join(', '));
   }
 
+  protected onTaskTypeChange(value: string): void {
+    this.createTaskForm.get('type')?.setValue(value);
+  }
+
+  protected onPriorityChange(value: string): void {
+    this.createTaskForm.get('priority')?.setValue(value);
+  }
+
   private resetModal(): void {
     this.createdTags = [];
     this.tagInputText = '';
     this.createTaskForm.reset({
       title: '',
       priority: 'Medium',
+      type: 'Task',
       deadline: '',
       description: '',
       tags: '',

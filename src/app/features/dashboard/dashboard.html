@@ -158,11 +158,22 @@
                         <div class="card-left-strip"></div>
                         <div class="card-inner">
                           <div class="card-top-row">
-                            <span class="task-number" [id]="'task-number-' + task.id">{{
-                              task.number
-                            }}</span>
+                            <div class="task-number-group">
+                              <app-icon
+                                [name]="getTaskTypeIcon(task.type)"
+                                [size]="16"
+                                class="task-type-icon"
+                              ></app-icon>
+                              <span class="task-number" [id]="'task-number-' + task.id">{{
+                                task.number
+                              }}</span>
+                            </div>
                             <span class="priority-pill priority-{{ task.priority.toLowerCase() }}">
-                              {{ task.priority }}
+                              <app-icon
+                                [name]="getPriorityIcon(task.priority)"
+                                [size]="12"
+                              ></app-icon>
+                              <span>{{ task.priority }}</span>
                             </span>
                           </div>
 
@@ -267,7 +278,14 @@
                   @for (task of filteredTasks$ | async; track task.id) {
                     <tr class="table-row" (click)="onSelectTask(task)">
                       <td>
-                        <span class="task-number">{{ task.number }}</span>
+                        <div class="task-number-group">
+                          <app-icon
+                            [name]="getTaskTypeIcon(task.type)"
+                            [size]="16"
+                            class="task-type-icon"
+                          ></app-icon>
+                          <span class="task-number">{{ task.number }}</span>
+                        </div>
                       </td>
                       <td>
                         <span class="status-pill status-{{ task.status.toLowerCase() }}">
@@ -277,7 +295,8 @@
                       </td>
                       <td>
                         <span class="priority-badge priority-{{ task.priority.toLowerCase() }}">
-                          {{ task.priority }}
+                          <app-icon [name]="getPriorityIcon(task.priority)" [size]="12"></app-icon>
+                          <span>{{ task.priority }}</span>
                         </span>
                       </td>
                       <td>

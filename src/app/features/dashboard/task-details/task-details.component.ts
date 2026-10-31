@@ -15,11 +15,17 @@ import {
   UserResult,
   Priority,
 } from '../../../core/models/task.models';
+import { IconComponent } from '../../../shared/components/icon/icon';
+import {
+  getPriorityIcon,
+  getTaskTypeIcon,
+  PRIORITIES,
+} from '../../../core/constants/task.constants';
 
 @Component({
   selector: 'app-task-details',
   standalone: true,
-  imports: [CommonModule, DatePipe, DecimalPipe],
+  imports: [CommonModule, DatePipe, DecimalPipe, IconComponent],
   templateUrl: './task-details.component.html',
   styleUrl: './task-details.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,6 +79,9 @@ export class TaskDetailsComponent {
 
   protected isPriorityDropdownOpen = false;
   protected readonly priorityLevels: Priority[] = ['Low', 'Medium', 'High', 'Critical'];
+  protected readonly priorities = PRIORITIES;
+  protected readonly getTaskTypeIcon = getTaskTypeIcon;
+  protected readonly getPriorityIcon = getPriorityIcon;
   protected newCommentText = '';
 
   private readonly taskCommentsMap = new Map<string, TaskComment[]>();

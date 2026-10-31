@@ -36,17 +36,24 @@
       <div class="form-row-2">
         <div class="form-field">
           <label for="create-priority">Priority <span class="required">*</span></label>
-          <select id="create-priority" formControlName="priority" class="azure-select">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
+          <app-dropdown
+            [options]="priorities"
+            [value]="null"
+            (valueChange)="onPriorityChange($event)"
+            placeholder="Select Priority"
+          >
+          </app-dropdown>
         </div>
 
         <div class="form-field">
-          <label for="create-deadline">Deadline</label>
-          <input id="create-deadline" type="date" formControlName="deadline" class="azure-input" />
+          <label for="create-type">Type <span class="required">*</span></label>
+          <app-dropdown
+            [options]="taskTypes"
+            [value]="null"
+            (valueChange)="onTaskTypeChange($event)"
+            placeholder="Select Task Type"
+          >
+          </app-dropdown>
         </div>
       </div>
 
@@ -102,6 +109,11 @@
               </button>
             }
           </div>
+        </div>
+
+        <div class="form-field">
+          <label for="create-deadline">Deadline</label>
+          <input id="create-deadline" type="date" formControlName="deadline" class="azure-input" />
         </div>
       </div>
 

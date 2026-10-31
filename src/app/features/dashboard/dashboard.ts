@@ -34,6 +34,7 @@ import {
   UserResult,
   TaskComment,
 } from '../../core/models/task.models';
+import { getTaskTypeIcon, getPriorityIcon } from '../../core/constants/task.constants';
 import {
   Workspace,
   WorkspaceMemberResult,
@@ -243,6 +244,9 @@ export class DashboardComponent implements OnInit {
   });
 
   readonly state$: Observable<DashboardState> = this.stateSubject.asObservable();
+
+  protected readonly getTaskTypeIcon = getTaskTypeIcon;
+  protected readonly getPriorityIcon = getPriorityIcon;
 
   readonly filteredTasks$: Observable<TaskResult[]> = this.state$.pipe(
     map((s) => this.filterTasks(s.tasks, s.searchQuery, s.statusFilter, s.priorityFilter)),
@@ -921,6 +925,7 @@ export class DashboardComponent implements OnInit {
       workspaceId: activeWorkspaceId,
       title: payload.title.trim(),
       description: payload.description?.trim() || null,
+      type: payload.type,
       priority: payload.priority,
       deadline: payload.deadline,
       assigneeId: payload.assigneeId || null,
