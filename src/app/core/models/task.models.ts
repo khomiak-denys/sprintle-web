@@ -1,5 +1,5 @@
 export type TaskStatus = 'Todo' | 'InProgress' | 'InReview' | 'Done' | 'Cancelled' | 'Closed';
-
+export type TaskType = 'Task' | 'Epic' | 'Feature' | 'UserStory' | 'Bug';
 export type Priority = 'Low' | 'Medium' | 'High' | 'Critical';
 
 export type MyTasksFilterType = 'all' | 'created' | 'assigned';
@@ -18,6 +18,7 @@ export interface TaskResult {
   readonly number: string;
   readonly title: string;
   readonly description: string | null;
+  readonly type?: TaskType;
   readonly status: TaskStatus;
   readonly priority: Priority;
   readonly deadline: string | null;
@@ -80,6 +81,7 @@ export interface CreateTaskRequest {
   readonly workspaceId: string;
   readonly title: string;
   readonly description?: string | null;
+  readonly type?: TaskType;
   readonly priority: Priority;
   readonly deadline?: string | null;
   readonly assigneeId?: string | null;
